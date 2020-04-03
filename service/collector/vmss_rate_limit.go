@@ -47,25 +47,16 @@ var (
 )
 
 type VMSSRateLimitConfig struct {
-	G8sClient versioned.Interface
-	K8sClient kubernetes.Interface
-	Logger    micrologger.Logger
-
-	// EnvironmentName is the name of the Azure environment used to compute the
-	// azure.Environment type. See also
-	// https://godoc.org/github.com/Azure/go-autorest/autorest/azure#Environment.
-	EnvironmentName        string
-	Location               string
+	G8sClient              versioned.Interface
+	K8sClient              kubernetes.Interface
+	Logger                 micrologger.Logger
 	CPAzureClientSetConfig client.AzureClientSetConfig
 }
 
 type VMSSRateLimit struct {
-	g8sClient versioned.Interface
-	k8sClient kubernetes.Interface
-	logger    micrologger.Logger
-
-	environmentName        string
-	location               string
+	g8sClient              versioned.Interface
+	k8sClient              kubernetes.Interface
+	logger                 micrologger.Logger
 	cpAzureClientSetConfig client.AzureClientSetConfig
 }
 
@@ -84,20 +75,10 @@ func NewVMSSRateLimit(config VMSSRateLimitConfig) (*VMSSRateLimit, error) {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
 
-	if config.EnvironmentName == "" {
-		return nil, microerror.Maskf(invalidConfigError, "%T.EnvironmentName must not be empty", config)
-	}
-	if config.Location == "" {
-		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
-	}
-
 	u := &VMSSRateLimit{
-		g8sClient: config.G8sClient,
-		k8sClient: config.K8sClient,
-		logger:    config.Logger,
-
-		environmentName:        config.EnvironmentName,
-		location:               config.Location,
+		g8sClient:              config.G8sClient,
+		k8sClient:              config.K8sClient,
+		logger:                 config.Logger,
 		cpAzureClientSetConfig: config.CPAzureClientSetConfig,
 	}
 
@@ -232,7 +213,7 @@ func (u *VMSSRateLimit) getAzureClients(cr providerv1alpha1.AzureConfig) (*clien
 	if err != nil {
 		return nil, nil, microerror.Mask(err)
 	}
-	config.EnvironmentName = u.environmentName
+	config.EnvironmentName = u.cpAzureClientSetConfig.EnvironmentName
 
 	azureClients, err := client.NewAzureClientSet(*config)
 	if err != nil {

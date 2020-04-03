@@ -12,7 +12,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/giantswarm/azure-collector/client"
-	"github.com/giantswarm/azure-collector/service/collector/setting"
 )
 
 var (
@@ -35,7 +34,7 @@ type VPNConnectionConfig struct {
 	K8sClient kubernetes.Interface
 	Logger    micrologger.Logger
 
-	AzureSetting             setting.Azure
+	ResourceGroup            string
 	HostAzureClientSetConfig client.AzureClientSetConfig
 }
 
@@ -43,7 +42,7 @@ type VPNConnection struct {
 	k8sClient kubernetes.Interface
 	logger    micrologger.Logger
 
-	azureSetting             setting.Azure
+	resourceGroup            string
 	hostAzureClientSetConfig client.AzureClientSetConfig
 }
 
@@ -54,10 +53,10 @@ func NewVPNConnection(config VPNConnectionConfig) (*VPNConnection, error) {
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
-
-	if err := config.AzureSetting.Validate(); err != nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.AzureSetting.%s", config, err)
+	if config.ResourceGroup == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.ResourceGroup must not be empty", config)
 	}
+
 	if err := config.HostAzureClientSetConfig.Validate(); err != nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.HostAzureClientSetConfig.%s", config, err)
 	}
@@ -66,7 +65,7 @@ func NewVPNConnection(config VPNConnectionConfig) (*VPNConnection, error) {
 		k8sClient: config.K8sClient,
 		logger:    config.Logger,
 
-		azureSetting:             config.AzureSetting,
+		resourceGroup:            config.ResourceGroup,
 		hostAzureClientSetConfig: config.HostAzureClientSetConfig,
 	}
 
@@ -80,7 +79,7 @@ func (v *VPNConnection) Collect(ch chan<- prometheus.Metric) error {
 	}
 
 	ctx := context.Background()
-	resourceGroup := v.azureSetting.HostCluster.ResourceGroup
+	resourceGroup := v.resourceGroup
 	connections, err := vpnConnectionClient.ListComplete(ctx, resourceGroup)
 	if err != nil {
 		return microerror.Mask(err)

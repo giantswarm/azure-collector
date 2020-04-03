@@ -33,12 +33,10 @@ var (
 		},
 		nil,
 	)
-	scrapeErrorCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: namespace,
-		Subsystem: component,
-		Name:      "scrape_error",
-		Help:      "Total number of times compute resource usage information scraping returned an error.",
-	})
+	scrapeErrorCounter = prometheus.NewCounter(
+		prometheus.CounterOpts{Namespace: "azure_operator", Subsystem: "usage", Name: "scrape_error",
+			Help: "Total number of times compute resource usage information scraping returned an error.",
+		})
 )
 
 type UsageConfig struct {
@@ -46,10 +44,6 @@ type UsageConfig struct {
 	K8sClient kubernetes.Interface
 	Logger    micrologger.Logger
 
-	// EnvironmentName is the name of the Azure environment used to compute the
-	// azure.Environment type. See also
-	// https://godoc.org/github.com/Azure/go-autorest/autorest/azure#Environment.
-	EnvironmentName        string
 	Location               string
 	CPAzureClientSetConfig client.AzureClientSetConfig
 }
@@ -61,13 +55,9 @@ type Usage struct {
 
 	usageScrapeError prometheus.Counter
 
-	environmentName        string
 	location               string
 	cpAzureClientSetConfig client.AzureClientSetConfig
 }
-
-const namespace = "azure_operator"
-const component = "usage"
 
 func init() {
 	prometheus.MustRegister(scrapeErrorCounter)
@@ -84,21 +74,15 @@ func NewUsage(config UsageConfig) (*Usage, error) {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
 
-	if config.EnvironmentName == "" {
-		return nil, microerror.Maskf(invalidConfigError, "%T.EnvironmentName must not be empty", config)
-	}
 	if config.Location == "" {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
 	}
 
 	u := &Usage{
-		g8sClient: config.G8sClient,
-		k8sClient: config.K8sClient,
-		logger:    config.Logger,
-
-		usageScrapeError: scrapeErrorCounter,
-
-		environmentName:        config.EnvironmentName,
+		g8sClient:              config.G8sClient,
+		k8sClient:              config.K8sClient,
+		logger:                 config.Logger,
+		usageScrapeError:       scrapeErrorCounter,
 		location:               config.Location,
 		cpAzureClientSetConfig: config.CPAzureClientSetConfig,
 	}
@@ -108,7 +92,7 @@ func NewUsage(config UsageConfig) (*Usage, error) {
 
 func (u *Usage) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
-	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(u.k8sClient, u.environmentName)
+	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(u.k8sClient, u.cpAzureClientSetConfig.EnvironmentName)
 	if err != nil {
 		return microerror.Mask(err)
 	}

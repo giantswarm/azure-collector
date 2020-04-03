@@ -7,15 +7,14 @@ import (
 	"github.com/giantswarm/micrologger"
 
 	"github.com/giantswarm/azure-collector/client"
-	"github.com/giantswarm/azure-collector/service/collector/setting"
 )
 
 type SetConfig struct {
-	K8sClient k8sclient.Interface
-	Logger    micrologger.Logger
-
-	AzureSetting             setting.Azure
-	HostAzureClientSetConfig client.AzureClientSetConfig
+	K8sClient                 k8sclient.Interface
+	Location                  string
+	Logger                    micrologger.Logger
+	HostAzureClientSetConfig  client.AzureClientSetConfig
+	ControlPlaneResourceGroup string
 }
 
 // Set is basically only a wrapper for the operator's collector implementations.
@@ -31,11 +30,10 @@ func NewSet(config SetConfig) (*Set, error) {
 	var deploymentCollector *Deployment
 	{
 		c := DeploymentConfig{
-			G8sClient: config.K8sClient.G8sClient(),
-			K8sClient: config.K8sClient.K8sClient(),
-			Logger:    config.Logger,
-
-			EnvironmentName: config.AzureSetting.EnvironmentName,
+			G8sClient:       config.K8sClient.G8sClient(),
+			K8sClient:       config.K8sClient.K8sClient(),
+			Logger:          config.Logger,
+			EnvironmentName: config.HostAzureClientSetConfig.EnvironmentName,
 		}
 
 		deploymentCollector, err = NewDeployment(c)
@@ -47,10 +45,8 @@ func NewSet(config SetConfig) (*Set, error) {
 	var resourceGroupCollector *ResourceGroup
 	{
 		c := ResourceGroupConfig{
-			K8sClient: config.K8sClient.K8sClient(),
-			Logger:    config.Logger,
-
-			EnvironmentName:        config.AzureSetting.EnvironmentName,
+			K8sClient:              config.K8sClient.K8sClient(),
+			Logger:                 config.Logger,
 			CPAzureClientSetConfig: config.HostAzureClientSetConfig,
 		}
 
@@ -67,8 +63,7 @@ func NewSet(config SetConfig) (*Set, error) {
 			K8sClient: config.K8sClient.K8sClient(),
 			Logger:    config.Logger,
 
-			EnvironmentName:        config.AzureSetting.EnvironmentName,
-			Location:               config.AzureSetting.Location,
+			Location:               config.Location,
 			CPAzureClientSetConfig: config.HostAzureClientSetConfig,
 		}
 
@@ -81,12 +76,9 @@ func NewSet(config SetConfig) (*Set, error) {
 	var rateLimitCollector *RateLimit
 	{
 		c := RateLimitConfig{
-			G8sClient: config.K8sClient.G8sClient(),
-			K8sClient: config.K8sClient.K8sClient(),
-			Logger:    config.Logger,
-
-			EnvironmentName:        config.AzureSetting.EnvironmentName,
-			Location:               config.AzureSetting.Location,
+			G8sClient:              config.K8sClient.G8sClient(),
+			K8sClient:              config.K8sClient.K8sClient(),
+			Logger:                 config.Logger,
 			CPAzureClientSetConfig: config.HostAzureClientSetConfig,
 		}
 
@@ -99,12 +91,9 @@ func NewSet(config SetConfig) (*Set, error) {
 	var vmssRateLimitCollector *VMSSRateLimit
 	{
 		c := VMSSRateLimitConfig{
-			G8sClient: config.K8sClient.G8sClient(),
-			K8sClient: config.K8sClient.K8sClient(),
-			Logger:    config.Logger,
-
-			EnvironmentName:        config.AzureSetting.EnvironmentName,
-			Location:               config.AzureSetting.Location,
+			G8sClient:              config.K8sClient.G8sClient(),
+			K8sClient:              config.K8sClient.K8sClient(),
+			Logger:                 config.Logger,
 			CPAzureClientSetConfig: config.HostAzureClientSetConfig,
 		}
 
@@ -120,7 +109,7 @@ func NewSet(config SetConfig) (*Set, error) {
 			K8sClient: config.K8sClient.K8sClient(),
 			Logger:    config.Logger,
 
-			AzureSetting:             config.AzureSetting,
+			ResourceGroup:            config.ControlPlaneResourceGroup,
 			HostAzureClientSetConfig: config.HostAzureClientSetConfig,
 		}
 
