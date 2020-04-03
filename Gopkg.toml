@@ -33,10 +33,6 @@ required = [
   version = "v40.0.0"
 
 [[constraint]]
-  name = "github.com/Azure/azure-storage-blob-go"
-  version = "0.8.0"
-
-[[constraint]]
   name = "github.com/docker/distribution"
   branch = "master"
 
@@ -45,47 +41,11 @@ required = [
   version = "~0.1.0"
 
 [[constraint]]
-  name = "github.com/giantswarm/apprclient"
-  branch = "master"
-
-[[constraint]]
-  name = "github.com/giantswarm/certs"
-  branch = "master"
-
-[[constraint]]
-  name = "github.com/giantswarm/e2e-harness"
-  branch = "master"
-
-[[constraint]]
-  name = "github.com/giantswarm/e2eclients"
-  branch = "master"
-
-[[constraint]]
-  name = "github.com/giantswarm/e2etemplates"
-  branch = "master"
-
-[[constraint]]
-  name = "github.com/giantswarm/e2etests"
-  branch = "master"
-
-[[constraint]]
   name = "github.com/giantswarm/exporterkit"
   branch = "master"
 
 [[constraint]]
-  name = "github.com/giantswarm/helmclient"
-  branch = "master"
-
-[[constraint]]
-  name = "github.com/giantswarm/ipam"
-  branch = "master"
-
-[[constraint]]
   name = "github.com/giantswarm/k8sclient"
-  branch = "master"
-
-[[constraint]]
-  name = "github.com/giantswarm/k8scloudconfig"
   branch = "master"
 
 [[constraint]]
@@ -109,15 +69,7 @@ required = [
   branch = "master"
 
 [[constraint]]
-  name = "github.com/giantswarm/randomkeys"
-  branch = "master"
-
-[[constraint]]
   name = "github.com/giantswarm/statusresource"
-  branch = "master"
-
-[[constraint]]
-  name = "github.com/giantswarm/tenantcluster"
   branch = "master"
 
 [[constraint]]
