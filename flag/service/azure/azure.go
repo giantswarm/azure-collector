@@ -2,8 +2,6 @@ package azure
 
 import (
 	"github.com/giantswarm/azure-collector/flag/service/azure/hostcluster"
-	"github.com/giantswarm/azure-collector/flag/service/azure/msi"
-	"github.com/giantswarm/azure-collector/flag/service/azure/template"
 )
 
 type Azure struct {
@@ -11,9 +9,7 @@ type Azure struct {
 	ClientSecret    string
 	EnvironmentName string
 	HostCluster     hostcluster.HostCluster
-	MSI             msi.MSI
 	Location        string
 	SubscriptionID  string
 	TenantID        string
-	Template        template.Template
 }

@@ -1,11 +1,11 @@
 package project
 
 var (
-	description string = "The azure-collector manages Kubernetes clusters on Azure."
+	description string = "The azure-collector exposes Azure metrics."
 	gitSHA             = "n/a"
 	name        string = "azure-collector"
 	source      string = "https://github.com/giantswarm/azure-collector"
-	version            = "3.0.1-dev"
+	version            = "1.0.0-dev"
 )
 
 func Description() string {
