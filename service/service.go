@@ -19,7 +19,6 @@ import (
 	"github.com/giantswarm/azure-collector/flag"
 	"github.com/giantswarm/azure-collector/pkg/project"
 	"github.com/giantswarm/azure-collector/service/collector"
-	"github.com/giantswarm/azure-collector/service/collector/setting"
 )
 
 // Config represents the configuration used to create a new service.
@@ -122,19 +121,9 @@ func New(config Config) (*Service, error) {
 	var operatorCollector *collector.Set
 	{
 		c := collector.SetConfig{
-			K8sClient: k8sClient,
-			Logger:    config.Logger,
-
-			AzureSetting: setting.Azure{
-				EnvironmentName: config.Viper.GetString(config.Flag.Service.Azure.EnvironmentName),
-				HostCluster: setting.AzureHostCluster{
-					CIDR:                  config.Viper.GetString(config.Flag.Service.Azure.HostCluster.CIDR),
-					ResourceGroup:         config.Viper.GetString(config.Flag.Service.Azure.HostCluster.ResourceGroup),
-					VirtualNetwork:        config.Viper.GetString(config.Flag.Service.Azure.HostCluster.VirtualNetwork),
-					VirtualNetworkGateway: config.Viper.GetString(config.Flag.Service.Azure.HostCluster.VirtualNetworkGateway),
-				},
-				Location: config.Viper.GetString(config.Flag.Service.Azure.Location),
-			},
+			ControlPlaneResourceGroup: config.Viper.GetString(config.Flag.Service.Azure.ControlPlaneResourceGroup),
+			Location:                  config.Viper.GetString(config.Flag.Service.Azure.Location),
+			Logger:                    config.Logger,
 			HostAzureClientSetConfig: client.AzureClientSetConfig{
 				ClientID:        config.Viper.GetString(config.Flag.Service.Azure.ClientID),
 				ClientSecret:    config.Viper.GetString(config.Flag.Service.Azure.ClientSecret),
@@ -142,6 +131,7 @@ func New(config Config) (*Service, error) {
 				SubscriptionID:  config.Viper.GetString(config.Flag.Service.Azure.SubscriptionID),
 				TenantID:        config.Viper.GetString(config.Flag.Service.Azure.TenantID),
 			},
+			K8sClient: k8sClient,
 		}
 
 		operatorCollector, err = collector.NewSet(c)

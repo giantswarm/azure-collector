@@ -13,18 +13,15 @@ import (
 	"github.com/giantswarm/versionbundle"
 	"github.com/spf13/viper"
 
-	"github.com/giantswarm/azure-collector/flag"
 	"github.com/giantswarm/azure-collector/pkg/project"
+
+	"github.com/giantswarm/azure-collector/flag"
 	"github.com/giantswarm/azure-collector/server"
 	"github.com/giantswarm/azure-collector/service"
 )
 
-const (
-	notAvailable = "n/a"
-)
-
 var (
-	f *flag.Flag = flag.New()
+	f = flag.New()
 )
 
 func init() {
@@ -122,10 +119,7 @@ func mainError() error {
 	daemonCommand.PersistentFlags().String(f.Service.Azure.Location, "", "Location of the host and guset clusters.")
 	daemonCommand.PersistentFlags().String(f.Service.Azure.SubscriptionID, "", "ID of the Azure Subscription.")
 	daemonCommand.PersistentFlags().String(f.Service.Azure.TenantID, "", "ID of the Active Directory Tenant.")
-	daemonCommand.PersistentFlags().String(f.Service.Azure.HostCluster.CIDR, "", "CIDR of the host cluster virtual network used to create a peering.")
-	daemonCommand.PersistentFlags().String(f.Service.Azure.HostCluster.ResourceGroup, "", "Host cluster resource group name.")
-	daemonCommand.PersistentFlags().String(f.Service.Azure.HostCluster.VirtualNetwork, "", "Host cluster virtual network name.")
-	daemonCommand.PersistentFlags().String(f.Service.Azure.HostCluster.VirtualNetworkGateway, "", "Host cluster virtual network gateway name.")
+	daemonCommand.PersistentFlags().String(f.Service.Azure.ControlPlaneResourceGroup, "", "Control plane resource group name.")
 	daemonCommand.PersistentFlags().String(f.Service.Kubernetes.Address, "", "Address used to connect to Kubernetes. When empty in-cluster config is created.")
 	daemonCommand.PersistentFlags().Bool(f.Service.Kubernetes.InCluster, true, "Whether to use the in-cluster config to authenticate with Kubernetes.")
 	daemonCommand.PersistentFlags().String(f.Service.Kubernetes.KubeConfig, "", "KubeConfig used to connect to Kubernetes. When empty other settings are used.")

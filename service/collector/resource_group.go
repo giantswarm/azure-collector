@@ -43,16 +43,12 @@ var (
 type ResourceGroupConfig struct {
 	K8sClient kubernetes.Interface
 	Logger    micrologger.Logger
-
-	EnvironmentName        string
 	CPAzureClientSetConfig client.AzureClientSetConfig
 }
 
 type ResourceGroup struct {
 	k8sClient kubernetes.Interface
 	logger    micrologger.Logger
-
-	environmentName        string
 	cpAzureClientSetConfig client.AzureClientSetConfig
 }
 
@@ -64,15 +60,9 @@ func NewResourceGroup(config ResourceGroupConfig) (*ResourceGroup, error) {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
 
-	if config.EnvironmentName == "" {
-		return nil, microerror.Maskf(invalidConfigError, "%T.EnvironmentName must not be empty", config)
-	}
-
 	r := &ResourceGroup{
 		k8sClient: config.K8sClient,
 		logger:    config.Logger,
-
-		environmentName:        config.EnvironmentName,
 		cpAzureClientSetConfig: config.CPAzureClientSetConfig,
 	}
 
@@ -80,7 +70,7 @@ func NewResourceGroup(config ResourceGroupConfig) (*ResourceGroup, error) {
 }
 
 func (r *ResourceGroup) Collect(ch chan<- prometheus.Metric) error {
-	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(r.k8sClient, r.environmentName)
+	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(r.k8sClient, r.cpAzureClientSetConfig.EnvironmentName)
 	if err != nil {
 		return microerror.Mask(err)
 	}
