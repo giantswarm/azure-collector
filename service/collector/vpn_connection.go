@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	vpnConnectionDesc *prometheus.Desc = prometheus.NewDesc(
+	vpnConnectionDesc = prometheus.NewDesc(
 		prometheus.BuildFQName("azure_operator", "vpn_connection", "info"),
 		"VPN connection informations.",
 		[]string{
@@ -56,7 +56,6 @@ func NewVPNConnection(config VPNConnectionConfig) (*VPNConnection, error) {
 	if config.ResourceGroup == "" {
 		return nil, microerror.Maskf(invalidConfigError, "%T.ResourceGroup must not be empty", config)
 	}
-
 	if err := config.HostAzureClientSetConfig.Validate(); err != nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.HostAzureClientSetConfig.%s", config, err)
 	}
@@ -114,7 +113,7 @@ func (v *VPNConnection) Collect(ch chan<- prometheus.Metric) error {
 			return nil
 		})
 
-		if err := connections.Next(); err != nil {
+		if err := connections.NextWithContext(ctx); err != nil {
 			return microerror.Mask(err)
 		}
 	}

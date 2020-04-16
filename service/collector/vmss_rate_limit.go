@@ -23,12 +23,12 @@ import (
 
 const (
 	vmssVMListHeaderName = "X-Ms-Ratelimit-Remaining-Resource"
-	vmssMetricsNamespace = "azure_operator"
+	vmssMetricsNamespace = "azure_collector"
 	vmssMetricsSubsystem = "rate_limit"
 )
 
 var (
-	vmssVMListDesc *prometheus.Desc = prometheus.NewDesc(
+	vmssVMListDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(vmssMetricsNamespace, vmssMetricsSubsystem, "vmss_instance_list"),
 		"Remaining number of VMSS VM list operations.",
 		[]string{
@@ -38,7 +38,7 @@ var (
 		},
 		nil,
 	)
-	vmssVMListErrorCounter prometheus.Counter = prometheus.NewCounter(prometheus.CounterOpts{
+	vmssVMListErrorCounter = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: vmssMetricsNamespace,
 		Subsystem: vmssMetricsSubsystem,
 		Name:      "vmss_instance_list_parsing_errors",
@@ -206,21 +206,6 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 func (u *VMSSRateLimit) Describe(ch chan<- *prometheus.Desc) error {
 	ch <- vmssVMListDesc
 	return nil
-}
-
-func (u *VMSSRateLimit) getAzureClients(cr providerv1alpha1.AzureConfig) (*client.AzureClientSetConfig, *client.AzureClientSet, error) {
-	config, err := credential.GetAzureConfig(u.k8sClient, key.CredentialName(cr), key.CredentialNamespace(cr))
-	if err != nil {
-		return nil, nil, microerror.Mask(err)
-	}
-	config.EnvironmentName = u.cpAzureClientSetConfig.EnvironmentName
-
-	azureClients, err := client.NewAzureClientSet(*config)
-	if err != nil {
-		return nil, nil, microerror.Mask(err)
-	}
-
-	return config, azureClients, nil
 }
 
 func inArray(a []string, s string) bool {
