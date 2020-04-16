@@ -1,3 +1,5 @@
 name: azure-collector
 version: [[ .Version ]]
 appVersion: [[ .AppVersion ]]
+description: Collector that exposes metrics about Azure
+home: "https://github.com/giantswarm/azure-collector"
