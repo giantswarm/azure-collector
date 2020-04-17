@@ -16,7 +16,7 @@ const (
 	TenantIDKey         = "azure.azureoperator.tenantid"
 	PartnerIDKey        = "azure.azureoperator.partnerid"
 	defaultAzureGUID    = "37f13270-5c7a-56ff-9211-8426baaeaabd"
-	SecretLabel         = "giantswarm.io/managed-by: credentiald"
+	SecretLabel         = "giantswarm.io/managed-by=credentiald"
 	credentialNamespace = "giantswarm"
 )
 
