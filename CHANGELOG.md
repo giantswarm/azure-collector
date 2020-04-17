@@ -9,9 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Fixed label selector to filter secrets from control plane.
+
+## [1.0.0]
+
 ### Added
 
-- First release
+- First release.
 
 
 
