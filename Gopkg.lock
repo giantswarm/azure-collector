@@ -2,11 +2,13 @@
 
 
 [[projects]]
-  digest = "1:c5fb84995be5414a7ec814cd8b5ac4135ddeb4795910d069c05fd2f42afed8dc"
+  digest = "1:8db63de322da575648f6718fff45c5e17e8aa65b8052ad2e9be3a45d7ad8e242"
   name = "github.com/Azure/azure-sdk-for-go"
   packages = [
+    "profiles/latest/graphrbac/graphrbac",
     "services/compute/mgmt/2019-07-01/compute",
     "services/dns/mgmt/2018-05-01/dns",
+    "services/graphrbac/1.6/graphrbac",
     "services/network/mgmt/2019-11-01/network",
     "services/resources/mgmt/2019-05-01/resources",
     "services/storage/mgmt/2019-04-01/storage",
@@ -950,6 +952,7 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/Azure/azure-sdk-for-go/profiles/latest/graphrbac/graphrbac",
     "github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute",
     "github.com/Azure/azure-sdk-for-go/services/dns/mgmt/2018-05-01/dns",
     "github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-11-01/network",
