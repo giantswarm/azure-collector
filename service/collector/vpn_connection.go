@@ -16,7 +16,7 @@ import (
 
 var (
 	vpnConnectionDesc = prometheus.NewDesc(
-		prometheus.BuildFQName("azure_operator", "vpn_connection", "info"),
+		prometheus.BuildFQName(MetricsNamespace, "vpn_connection", "info"),
 		"VPN connection informations.",
 		[]string{
 			"id",

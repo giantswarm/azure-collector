@@ -9,6 +9,10 @@ import (
 	"github.com/giantswarm/azure-collector/client"
 )
 
+const (
+	MetricsNamespace = "azure_operator"
+)
+
 type SetConfig struct {
 	K8sClient                 k8sclient.Interface
 	Location                  string

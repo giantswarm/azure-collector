@@ -22,13 +22,12 @@ const (
 	remainingReadsHeaderName  = "x-ms-ratelimit-remaining-subscription-reads"
 	remainingWritesHeaderName = "x-ms-ratelimit-remaining-subscription-writes"
 	resourceGroupNamePrefix   = "azure-collector-empty-rg-for-metrics"
-	metricsNamespace          = "azure_collector"
 	metricsSubsystem          = "rate_limit"
 )
 
 var (
 	readsDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(metricsNamespace, metricsSubsystem, "reads"),
+		prometheus.BuildFQName(MetricsNamespace, metricsSubsystem, "reads"),
 		"Remaining number of reads allowed.",
 		[]string{
 			"subscription",
@@ -37,7 +36,7 @@ var (
 		nil,
 	)
 	writesDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(metricsNamespace, metricsSubsystem, "writes"),
+		prometheus.BuildFQName(MetricsNamespace, metricsSubsystem, "writes"),
 		"Remaining number of writes allowed.",
 		[]string{
 			"subscription",
@@ -46,13 +45,13 @@ var (
 		nil,
 	)
 	readsErrorCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: metricsNamespace,
+		Namespace: MetricsNamespace,
 		Subsystem: metricsSubsystem,
 		Name:      "reads_parsing_errors",
 		Help:      "Errors trying to parse the remaining requests from the response header",
 	})
 	writesErrorCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: metricsNamespace,
+		Namespace: MetricsNamespace,
 		Subsystem: metricsSubsystem,
 		Name:      "writes_parsing_errors",
 		Help:      "Errors trying to parse the remaining requests from the response header",

@@ -25,7 +25,7 @@ const (
 
 var (
 	resourceGroupDesc = prometheus.NewDesc(
-		prometheus.BuildFQName("azure_operator", "resource_group", "info"),
+		prometheus.BuildFQName(MetricsNamespace, "resource_group", "info"),
 		"Resource group information.",
 		[]string{
 			labelID,

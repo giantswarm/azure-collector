@@ -34,7 +34,7 @@ const (
 
 var (
 	spExpirationDesc = prometheus.NewDesc(
-		prometheus.BuildFQName("azure_operator", "service_principal_token", "expiration"),
+		prometheus.BuildFQName(MetricsNamespace, "service_principal_token", "expiration"),
 		"Expiration date for Azure Access Tokens.",
 		[]string{
 			labelClientId,
@@ -48,7 +48,7 @@ var (
 	)
 
 	spExpirationFailedScrapeDesc = prometheus.NewDesc(
-		prometheus.BuildFQName("azure_operator", "service_principal_token", "check_failed"),
+		prometheus.BuildFQName(MetricsNamespace, "service_principal_token", "check_failed"),
 		"Unable to retrieve informations about the service principal expiration date.",
 		[]string{
 			labelClientId,

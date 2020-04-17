@@ -27,7 +27,7 @@ const (
 
 var (
 	deploymentDesc = prometheus.NewDesc(
-		prometheus.BuildFQName("azure_operator", "deployment", "status"),
+		prometheus.BuildFQName(MetricsNamespace, "deployment", "status"),
 		"Cluster status condition as provided by the CR status.",
 		[]string{
 			"cluster_id",

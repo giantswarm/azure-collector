@@ -16,7 +16,7 @@ import (
 
 var (
 	usageCurrentDesc = prometheus.NewDesc(
-		prometheus.BuildFQName("azure_operator", "usage", "current"),
+		prometheus.BuildFQName(MetricsNamespace, "usage", "current"),
 		"Current usage of specific Quotas as defined by Azure.",
 		[]string{
 			"name",
@@ -25,7 +25,7 @@ var (
 		nil,
 	)
 	usageLimitDesc = prometheus.NewDesc(
-		prometheus.BuildFQName("azure_operator", "usage", "limit"),
+		prometheus.BuildFQName(MetricsNamespace, "usage", "limit"),
 		"Usage limit of specific Quotas as defined by Azure.",
 		[]string{
 			"name",
@@ -34,7 +34,7 @@ var (
 		nil,
 	)
 	scrapeErrorCounter = prometheus.NewCounter(
-		prometheus.CounterOpts{Namespace: "azure_operator", Subsystem: "usage", Name: "scrape_error",
+		prometheus.CounterOpts{Namespace: MetricsNamespace, Subsystem: "usage", Name: "scrape_error",
 			Help: "Total number of times compute resource usage information scraping returned an error.",
 		})
 )
