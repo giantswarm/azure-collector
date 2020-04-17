@@ -76,14 +76,6 @@ func (r *ResourceGroup) Collect(ch chan<- prometheus.Metric) error {
 		return microerror.Mask(err)
 	}
 
-	// The operator potentially uses a different set of credentials than
-	// tenant clusters, so we add the operator credentials as well.
-	operatorClientSet, err := client.NewAzureClientSet(r.cpAzureClientSetConfig)
-	if err != nil {
-		return microerror.Mask(err)
-	}
-	clientSets[r.cpAzureClientSetConfig.SubscriptionID] = operatorClientSet
-
 	var g errgroup.Group
 
 	for _, item := range clientSets {

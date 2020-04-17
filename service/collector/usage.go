@@ -97,14 +97,6 @@ func (u *Usage) Collect(ch chan<- prometheus.Metric) error {
 		return microerror.Mask(err)
 	}
 
-	// The operator potentially uses a different set of credentials than
-	// tenant clusters, so we add the operator credentials as well.
-	operatorClientSet, err := client.NewAzureClientSet(u.cpAzureClientSetConfig)
-	if err != nil {
-		return microerror.Mask(err)
-	}
-	clientSets[u.cpAzureClientSetConfig.SubscriptionID] = operatorClientSet
-
 	// We track usage metrics for each client labeled by subscription.
 	// That way we prevent duplicated metrics.
 	for subscriptionID, azureClientSet := range clientSets {
