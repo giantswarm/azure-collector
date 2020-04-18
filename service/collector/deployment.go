@@ -3,18 +3,13 @@ package collector
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	"github.com/Azure/go-autorest/autorest/to"
-	providerv1alpha1 "github.com/giantswarm/apiextensions/pkg/apis/provider/v1alpha1"
 	"github.com/giantswarm/apiextensions/pkg/clientset/versioned"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/giantswarm/azure-collector/client"
-	"github.com/giantswarm/azure-collector/service/collector/key"
 	"github.com/giantswarm/azure-collector/service/credential"
 )
 
@@ -50,6 +45,8 @@ type Deployment struct {
 	logger    micrologger.Logger
 }
 
+// NewDeployment exposes metrics about the Azure ARM Deployments for every cluster on this installation.
+// It finds the cluster in the control plane, and uses the cluster Azure credentials to find the Deployments info.
 func NewDeployment(config DeploymentConfig) (*Deployment, error) {
 	if config.G8sClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.G8sClient must not be empty", config)
@@ -72,33 +69,13 @@ func NewDeployment(config DeploymentConfig) (*Deployment, error) {
 
 func (d *Deployment) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
-	var crs []providerv1alpha1.AzureConfig
-	{
-		mark := ""
-		page := 0
-		for page == 0 || len(mark) > 0 {
-			opts := metav1.ListOptions{
-				Continue: mark,
-			}
-			list, err := d.g8sClient.ProviderV1alpha1().AzureConfigs("").List(opts)
-			if err != nil {
-				return microerror.Mask(err)
-			}
-
-			crs = append(crs, list.Items...)
-
-			mark = list.Continue
-			page++
-		}
+	azureClientSets, err := credential.GetAzureClientSetsByCluster(d.k8sClient, d.g8sClient)
+	if err != nil {
+		return microerror.Mask(err)
 	}
 
-	for _, cr := range crs {
-		deploymentsClient, err := d.getDeploymentsClient(cr)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-
-		r, err := deploymentsClient.ListByResourceGroup(context.Background(), key.ClusterID(cr), "", to.Int32Ptr(100))
+	for clusterID, azureClientSet := range azureClientSets {
+		r, err := azureClientSet.DeploymentsClient.ListByResourceGroup(context.Background(), clusterID, "", to.Int32Ptr(100))
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -109,7 +86,7 @@ func (d *Deployment) Collect(ch chan<- prometheus.Metric) error {
 					deploymentDesc,
 					prometheus.GaugeValue,
 					float64(matchedStringToInt(statusCanceled, *v.Properties.ProvisioningState)),
-					key.ClusterID(cr),
+					clusterID,
 					*v.Name,
 					statusCanceled,
 				)
@@ -117,7 +94,7 @@ func (d *Deployment) Collect(ch chan<- prometheus.Metric) error {
 					deploymentDesc,
 					prometheus.GaugeValue,
 					float64(matchedStringToInt(statusFailed, *v.Properties.ProvisioningState)),
-					key.ClusterID(cr),
+					clusterID,
 					*v.Name,
 					statusFailed,
 				)
@@ -125,7 +102,7 @@ func (d *Deployment) Collect(ch chan<- prometheus.Metric) error {
 					deploymentDesc,
 					prometheus.GaugeValue,
 					float64(matchedStringToInt(statusRunning, *v.Properties.ProvisioningState)),
-					key.ClusterID(cr),
+					clusterID,
 					*v.Name,
 					statusRunning,
 				)
@@ -133,7 +110,7 @@ func (d *Deployment) Collect(ch chan<- prometheus.Metric) error {
 					deploymentDesc,
 					prometheus.GaugeValue,
 					float64(matchedStringToInt(statusSucceeded, *v.Properties.ProvisioningState)),
-					key.ClusterID(cr),
+					clusterID,
 					*v.Name,
 					statusSucceeded,
 				)
@@ -152,19 +129,6 @@ func (d *Deployment) Collect(ch chan<- prometheus.Metric) error {
 func (d *Deployment) Describe(ch chan<- *prometheus.Desc) error {
 	ch <- deploymentDesc
 	return nil
-}
-
-func (d *Deployment) getDeploymentsClient(cr providerv1alpha1.AzureConfig) (*resources.DeploymentsClient, error) {
-	config, err := credential.GetAzureConfigFromSecretName(d.k8sClient, key.CredentialName(cr), key.CredentialNamespace(cr))
-	if err != nil {
-		return nil, microerror.Mask(err)
-	}
-	azureClients, err := client.NewAzureClientSet(*config)
-	if err != nil {
-		return nil, microerror.Mask(err)
-	}
-
-	return azureClients.DeploymentsClient, nil
 }
 
 func matchedStringToInt(a, b string) int {

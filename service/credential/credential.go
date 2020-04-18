@@ -1,12 +1,15 @@
 package credential
 
 import (
+	providerv1alpha1 "github.com/giantswarm/apiextensions/pkg/apis/provider/v1alpha1"
+	"github.com/giantswarm/apiextensions/pkg/clientset/versioned"
 	"github.com/giantswarm/microerror"
 	v1 "k8s.io/api/core/v1"
 	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/giantswarm/azure-collector/client"
+	"github.com/giantswarm/azure-collector/service/collector/key"
 )
 
 const (
@@ -105,6 +108,43 @@ func GetAzureClientSetsFromCredentialSecretsBySubscription(k8sclient kubernetes.
 
 	for azureClientSetConfig, azureClientSet := range rawAzureClientSets {
 		azureClientSets[azureClientSetConfig.SubscriptionID] = azureClientSet
+	}
+
+	return azureClientSets, nil
+}
+
+func GetAzureClientSetsByCluster(k8sclient kubernetes.Interface, g8sclient versioned.Interface) (map[string]*client.AzureClientSet, error) {
+	azureClientSets := map[string]*client.AzureClientSet{}
+	var crs []providerv1alpha1.AzureConfig
+	{
+		mark := ""
+		page := 0
+		for page == 0 || len(mark) > 0 {
+			opts := apismetav1.ListOptions{
+				Continue: mark,
+			}
+			list, err := g8sclient.ProviderV1alpha1().AzureConfigs("").List(opts)
+			if err != nil {
+				return azureClientSets, microerror.Mask(err)
+			}
+
+			crs = append(crs, list.Items...)
+
+			mark = list.Continue
+			page++
+		}
+	}
+
+	for _, cr := range crs {
+		config, err := GetAzureConfigFromSecretName(k8sclient, key.CredentialName(cr), key.CredentialNamespace(cr))
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+		azureClients, err := client.NewAzureClientSet(*config)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+		azureClientSets[cr.GetName()] = azureClients
 	}
 
 	return azureClientSets, nil
