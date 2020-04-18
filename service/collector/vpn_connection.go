@@ -12,6 +12,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/giantswarm/azure-collector/client"
+	"github.com/giantswarm/azure-collector/service/credential"
 )
 
 var (
@@ -34,16 +35,14 @@ type VPNConnectionConfig struct {
 	K8sClient kubernetes.Interface
 	Logger    micrologger.Logger
 
-	ResourceGroup            string
-	HostAzureClientSetConfig client.AzureClientSetConfig
+	ResourceGroup string
 }
 
 type VPNConnection struct {
 	k8sClient kubernetes.Interface
 	logger    micrologger.Logger
 
-	resourceGroup            string
-	hostAzureClientSetConfig client.AzureClientSetConfig
+	resourceGroup string
 }
 
 func NewVPNConnection(config VPNConnectionConfig) (*VPNConnection, error) {
@@ -61,8 +60,7 @@ func NewVPNConnection(config VPNConnectionConfig) (*VPNConnection, error) {
 		k8sClient: config.K8sClient,
 		logger:    config.Logger,
 
-		resourceGroup:            config.ResourceGroup,
-		hostAzureClientSetConfig: config.HostAzureClientSetConfig,
+		resourceGroup: config.ResourceGroup,
 	}
 
 	return v, nil
@@ -128,7 +126,11 @@ func (v *VPNConnection) Describe(ch chan<- *prometheus.Desc) error {
 }
 
 func (v *VPNConnection) getVPNConnectionsClient() (*network.VirtualNetworkGatewayConnectionsClient, error) {
-	azureClients, err := client.NewAzureClientSet(v.hostAzureClientSetConfig)
+	config, err := credential.GetAzureConfigFromSecretName(v.k8sClient, credential.CredentialDefault, credential.CredentialNamespace)
+	if err != nil {
+		return nil, microerror.Mask(err)
+	}
+	azureClients, err := client.NewAzureClientSet(*config)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}

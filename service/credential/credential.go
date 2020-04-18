@@ -16,7 +16,8 @@ const (
 	TenantIDKey         = "azure.azureoperator.tenantid"
 	PartnerIDKey        = "azure.azureoperator.partnerid"
 	SecretLabel         = "giantswarm.io/managed-by=credentiald"
-	credentialNamespace = "giantswarm"
+	CredentialNamespace = "giantswarm"
+	CredentialDefault   = "credential-default"
 )
 
 func GetAzureConfigFromSecretName(k8sClient kubernetes.Interface, name string, namespace string) (*client.AzureClientSetConfig, error) {
@@ -117,7 +118,7 @@ func GetCredentialSecrets(k8sClient kubernetes.Interface) (secrets []v1.Secret, 
 			Continue:      mark,
 			LabelSelector: SecretLabel,
 		}
-		list, err := k8sClient.CoreV1().Secrets(credentialNamespace).List(opts)
+		list, err := k8sClient.CoreV1().Secrets(CredentialNamespace).List(opts)
 		if err != nil {
 			return secrets, microerror.Mask(err)
 		}

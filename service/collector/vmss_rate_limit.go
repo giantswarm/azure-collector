@@ -47,17 +47,15 @@ var (
 )
 
 type VMSSRateLimitConfig struct {
-	G8sClient              versioned.Interface
-	K8sClient              kubernetes.Interface
-	Logger                 micrologger.Logger
-	CPAzureClientSetConfig client.AzureClientSetConfig
+	G8sClient versioned.Interface
+	K8sClient kubernetes.Interface
+	Logger    micrologger.Logger
 }
 
 type VMSSRateLimit struct {
-	g8sClient              versioned.Interface
-	k8sClient              kubernetes.Interface
-	logger                 micrologger.Logger
-	cpAzureClientSetConfig client.AzureClientSetConfig
+	g8sClient versioned.Interface
+	k8sClient kubernetes.Interface
+	logger    micrologger.Logger
 }
 
 func init() {
@@ -76,10 +74,9 @@ func NewVMSSRateLimit(config VMSSRateLimitConfig) (*VMSSRateLimit, error) {
 	}
 
 	u := &VMSSRateLimit{
-		g8sClient:              config.G8sClient,
-		k8sClient:              config.K8sClient,
-		logger:                 config.Logger,
-		cpAzureClientSetConfig: config.CPAzureClientSetConfig,
+		g8sClient: config.G8sClient,
+		k8sClient: config.K8sClient,
+		logger:    config.Logger,
 	}
 
 	return u, nil

@@ -5,8 +5,6 @@ import (
 	"github.com/giantswarm/k8sclient"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-
-	"github.com/giantswarm/azure-collector/client"
 )
 
 const (
@@ -17,7 +15,6 @@ type SetConfig struct {
 	K8sClient                 k8sclient.Interface
 	Location                  string
 	Logger                    micrologger.Logger
-	HostAzureClientSetConfig  client.AzureClientSetConfig
 	ControlPlaneResourceGroup string
 }
 
@@ -48,9 +45,8 @@ func NewSet(config SetConfig) (*Set, error) {
 	var resourceGroupCollector *ResourceGroup
 	{
 		c := ResourceGroupConfig{
-			K8sClient:              config.K8sClient.K8sClient(),
-			Logger:                 config.Logger,
-			CPAzureClientSetConfig: config.HostAzureClientSetConfig,
+			K8sClient: config.K8sClient.K8sClient(),
+			Logger:    config.Logger,
 		}
 
 		resourceGroupCollector, err = NewResourceGroup(c)
@@ -65,9 +61,7 @@ func NewSet(config SetConfig) (*Set, error) {
 			G8sClient: config.K8sClient.G8sClient(),
 			K8sClient: config.K8sClient.K8sClient(),
 			Logger:    config.Logger,
-
-			Location:               config.Location,
-			CPAzureClientSetConfig: config.HostAzureClientSetConfig,
+			Location:  config.Location,
 		}
 
 		usageCollector, err = NewUsage(c)
@@ -79,11 +73,10 @@ func NewSet(config SetConfig) (*Set, error) {
 	var rateLimitCollector *RateLimit
 	{
 		c := RateLimitConfig{
-			G8sClient:              config.K8sClient.G8sClient(),
-			K8sClient:              config.K8sClient.K8sClient(),
-			Location:               config.Location,
-			Logger:                 config.Logger,
-			CPAzureClientSetConfig: config.HostAzureClientSetConfig,
+			G8sClient: config.K8sClient.G8sClient(),
+			K8sClient: config.K8sClient.K8sClient(),
+			Location:  config.Location,
+			Logger:    config.Logger,
 		}
 
 		rateLimitCollector, err = NewRateLimit(c)
@@ -108,10 +101,9 @@ func NewSet(config SetConfig) (*Set, error) {
 	var vmssRateLimitCollector *VMSSRateLimit
 	{
 		c := VMSSRateLimitConfig{
-			G8sClient:              config.K8sClient.G8sClient(),
-			K8sClient:              config.K8sClient.K8sClient(),
-			Logger:                 config.Logger,
-			CPAzureClientSetConfig: config.HostAzureClientSetConfig,
+			G8sClient: config.K8sClient.G8sClient(),
+			K8sClient: config.K8sClient.K8sClient(),
+			Logger:    config.Logger,
 		}
 
 		vmssRateLimitCollector, err = NewVMSSRateLimit(c)
@@ -126,8 +118,7 @@ func NewSet(config SetConfig) (*Set, error) {
 			K8sClient: config.K8sClient.K8sClient(),
 			Logger:    config.Logger,
 
-			ResourceGroup:            config.ControlPlaneResourceGroup,
-			HostAzureClientSetConfig: config.HostAzureClientSetConfig,
+			ResourceGroup: config.ControlPlaneResourceGroup,
 		}
 
 		vpnConnectionCollector, err = NewVPNConnection(c)
