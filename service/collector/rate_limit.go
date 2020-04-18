@@ -76,6 +76,9 @@ func init() {
 	prometheus.MustRegister(writesErrorCounter)
 }
 
+// NewRateLimit exposes metrics about the Azure resource group client rate limit.
+// It creates and fetches a resource group. That way it can inspect the Azure API response to find rate limit headers.
+// It uses the credentials found in the "credential-*" secrets of the control plane.
 func NewRateLimit(config RateLimitConfig) (*RateLimit, error) {
 	if config.G8sClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.G8sClient must not be empty", config)

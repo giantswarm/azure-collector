@@ -49,6 +49,8 @@ type ResourceGroup struct {
 	logger    micrologger.Logger
 }
 
+// NewResourceGroup exposes metrics on the existing resource groups for every subscription.
+// It exposes metrcis about the subscriptions found in the "credential-*" secrets of the control plane.
 func NewResourceGroup(config ResourceGroupConfig) (*ResourceGroup, error) {
 	if config.K8sClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.K8sClient must not be empty", config)

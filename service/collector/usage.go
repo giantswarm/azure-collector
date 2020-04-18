@@ -60,6 +60,8 @@ func init() {
 	prometheus.MustRegister(scrapeErrorCounter)
 }
 
+// NewUsage exposes metrics about the quota usage on Azure so we can alert when we are reaching the quota limits.
+// It exposes quota metrics for every subscription found in the "credential-*" secrets of the control plane.
 func NewUsage(config UsageConfig) (*Usage, error) {
 	if config.G8sClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.G8sClient must not be empty", config)

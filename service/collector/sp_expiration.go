@@ -63,6 +63,8 @@ type SPExpiration struct {
 	logger    micrologger.Logger
 }
 
+// NewSPExpiration exposes metrics about the expiration date of Azure Service Principals.
+// It exposes metrcis about the Service Principals found in the "credential-*" secrets of the control plane.
 func NewSPExpiration(config SPExpirationConfig) (*SPExpiration, error) {
 	if config.K8sClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.K8sClient must not be empty", config)
