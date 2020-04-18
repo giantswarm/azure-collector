@@ -13,15 +13,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/giantswarm/azure-collector/client"
 	"github.com/giantswarm/azure-collector/service/credential"
 )
-
-type azureCredentials struct {
-	subscriptionID string
-	tenantID       string
-	clientID       string
-	clientSecret   string
-}
 
 const (
 	labelClientId        = "client_id"
@@ -60,15 +54,13 @@ var (
 )
 
 type SPExpirationConfig struct {
-	K8sClient       kubernetes.Interface
-	Logger          micrologger.Logger
-	EnvironmentName string
+	K8sClient kubernetes.Interface
+	Logger    micrologger.Logger
 }
 
 type SPExpiration struct {
-	k8sClient   kubernetes.Interface
-	logger      micrologger.Logger
-	environment *azure.Environment
+	k8sClient kubernetes.Interface
+	logger    micrologger.Logger
 }
 
 func NewSPExpiration(config SPExpirationConfig) (*SPExpiration, error) {
@@ -79,56 +71,38 @@ func NewSPExpiration(config SPExpirationConfig) (*SPExpiration, error) {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
 
-	env, err := azure.EnvironmentFromName(config.EnvironmentName)
-	if err != nil {
-		return nil, err
-	}
-
 	v := &SPExpiration{
-		k8sClient:   config.K8sClient,
-		logger:      config.Logger,
-		environment: &env,
+		k8sClient: config.K8sClient,
+		logger:    config.Logger,
 	}
 
 	return v, nil
 }
 
 func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
-	secretList, err := credential.GetCredentialSecrets(v.k8sClient)
+	azureClientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(v.k8sClient)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	failedScrapes := make(map[string]azureCredentials)
+	failedScrapes := make(map[string]*client.AzureClientSetConfig)
 
-	for _, secret := range secretList {
-		clientID := string(secret.Data["azure.azureoperator.clientid"])
-		clientSecret := string(secret.Data["azure.azureoperator.clientsecret"])
-		subscriptionID := string(secret.Data["azure.azureoperator.subscriptionid"])
-		tenantID := string(secret.Data["azure.azureoperator.tenantid"])
-
-		creds := azureCredentials{
-			subscriptionID: subscriptionID,
-			tenantID:       tenantID,
-			clientID:       clientID,
-			clientSecret:   clientSecret,
-		}
-
+	for azureClientSetConfig := range azureClientSets {
 		ctx := context.Background()
 
-		c, err := v.getApplicationsClient(creds)
+		c, err := v.getApplicationsClient(azureClientSetConfig)
 		if err != nil {
 			// Ignore but log
 			v.logger.LogCtx(ctx, "level", "warning", "message", "Unable to create an applications client: ", err.Error())
-			failedScrapes[creds.clientID] = creds
+			failedScrapes[azureClientSetConfig.ClientID] = azureClientSetConfig
 			continue
 		}
 
-		apps, err := c.ListComplete(ctx, fmt.Sprintf("appId eq '%s'", creds.clientID))
+		apps, err := c.ListComplete(ctx, fmt.Sprintf("appId eq '%s'", azureClientSetConfig.ClientID))
 		if err != nil {
 			// Ignore but log
 			v.logger.LogCtx(ctx, "level", "warning", "message", "Unable to get application: ", err.Error())
-			failedScrapes[creds.clientID] = creds
+			failedScrapes[azureClientSetConfig.ClientID] = azureClientSetConfig
 			continue
 		}
 
@@ -139,9 +113,9 @@ func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 					spExpirationDesc,
 					prometheus.GaugeValue,
 					float64(pc.EndDate.Unix()),
-					creds.clientID,
-					creds.subscriptionID,
-					creds.tenantID,
+					azureClientSetConfig.ClientID,
+					azureClientSetConfig.SubscriptionID,
+					azureClientSetConfig.TenantID,
 					*app.AppID,
 					*app.DisplayName,
 					*pc.KeyID,
@@ -155,14 +129,14 @@ func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 	}
 
 	// Send metrics for failed scrapes as well
-	for _, creds := range failedScrapes {
+	for _, azureClientSetConfig := range failedScrapes {
 		ch <- prometheus.MustNewConstMetric(
 			spExpirationFailedScrapeDesc,
 			prometheus.GaugeValue,
 			float64(1),
-			creds.clientID,
-			creds.subscriptionID,
-			creds.tenantID,
+			azureClientSetConfig.ClientID,
+			azureClientSetConfig.SubscriptionID,
+			azureClientSetConfig.TenantID,
 		)
 	}
 
@@ -175,9 +149,9 @@ func (v *SPExpiration) Describe(ch chan<- *prometheus.Desc) error {
 	return nil
 }
 
-func (v *SPExpiration) getApplicationsClient(creds azureCredentials) (*graphrbac.ApplicationsClient, error) {
-	c := graphrbac.NewApplicationsClient(creds.tenantID)
-	a, err := v.getGraphAuthorizer(creds)
+func (v *SPExpiration) getApplicationsClient(azureClientSetConfig *client.AzureClientSetConfig) (*graphrbac.ApplicationsClient, error) {
+	c := graphrbac.NewApplicationsClient(azureClientSetConfig.TenantID)
+	a, err := v.getGraphAuthorizer(azureClientSetConfig)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
@@ -187,17 +161,21 @@ func (v *SPExpiration) getApplicationsClient(creds azureCredentials) (*graphrbac
 	return &c, nil
 }
 
-func (v *SPExpiration) getAuthorizerForResource(creds azureCredentials, resource string) (autorest.Authorizer, error) {
+func (v *SPExpiration) getAuthorizerForResource(azureClientSetConfig *client.AzureClientSetConfig, resource string) (autorest.Authorizer, error) {
 	var a autorest.Authorizer
 	var err error
 
-	oauthConfig, err := adal.NewOAuthConfig(v.environment.ActiveDirectoryEndpoint, creds.tenantID)
+	env, err := azure.EnvironmentFromName(azureClientSetConfig.EnvironmentName)
+	if err != nil {
+		return a, microerror.Mask(err)
+	}
+
+	oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, azureClientSetConfig.TenantID)
 	if err != nil {
 		return nil, err
 	}
 
-	token, err := adal.NewServicePrincipalToken(
-		*oauthConfig, creds.clientID, creds.clientSecret, resource)
+	token, err := adal.NewServicePrincipalToken(*oauthConfig, azureClientSetConfig.ClientID, azureClientSetConfig.ClientSecret, resource)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
@@ -207,11 +185,16 @@ func (v *SPExpiration) getAuthorizerForResource(creds azureCredentials, resource
 	return a, err
 }
 
-func (v *SPExpiration) getGraphAuthorizer(creds azureCredentials) (autorest.Authorizer, error) {
+func (v *SPExpiration) getGraphAuthorizer(azureClientSetConfig *client.AzureClientSetConfig) (autorest.Authorizer, error) {
 	var a autorest.Authorizer
 	var err error
 
-	a, err = v.getAuthorizerForResource(creds, v.environment.GraphEndpoint)
+	env, err := azure.EnvironmentFromName(azureClientSetConfig.EnvironmentName)
+	if err != nil {
+		return a, microerror.Mask(err)
+	}
+
+	a, err = v.getAuthorizerForResource(azureClientSetConfig, env.GraphEndpoint)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}

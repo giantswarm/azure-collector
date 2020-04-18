@@ -34,10 +34,9 @@ func NewSet(config SetConfig) (*Set, error) {
 	var deploymentCollector *Deployment
 	{
 		c := DeploymentConfig{
-			G8sClient:       config.K8sClient.G8sClient(),
-			K8sClient:       config.K8sClient.K8sClient(),
-			Logger:          config.Logger,
-			EnvironmentName: config.HostAzureClientSetConfig.EnvironmentName,
+			G8sClient: config.K8sClient.G8sClient(),
+			K8sClient: config.K8sClient.K8sClient(),
+			Logger:    config.Logger,
 		}
 
 		deploymentCollector, err = NewDeployment(c)
@@ -96,9 +95,8 @@ func NewSet(config SetConfig) (*Set, error) {
 	var spExpirationCollector *SPExpiration
 	{
 		c := SPExpirationConfig{
-			K8sClient:       config.K8sClient.K8sClient(),
-			Logger:          config.Logger,
-			EnvironmentName: config.HostAzureClientSetConfig.EnvironmentName,
+			K8sClient: config.K8sClient.K8sClient(),
+			Logger:    config.Logger,
 		}
 
 		spExpirationCollector, err = NewSPExpiration(c)

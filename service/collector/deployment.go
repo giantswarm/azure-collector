@@ -42,19 +42,12 @@ type DeploymentConfig struct {
 	G8sClient versioned.Interface
 	K8sClient kubernetes.Interface
 	Logger    micrologger.Logger
-
-	// EnvironmentName is the name of the Azure environment used to compute the
-	// azure.Environment type. See also
-	// https://godoc.org/github.com/Azure/go-autorest/autorest/azure#Environment.
-	EnvironmentName string
 }
 
 type Deployment struct {
 	g8sClient versioned.Interface
 	k8sClient kubernetes.Interface
 	logger    micrologger.Logger
-
-	environmentName string
 }
 
 func NewDeployment(config DeploymentConfig) (*Deployment, error) {
@@ -68,16 +61,10 @@ func NewDeployment(config DeploymentConfig) (*Deployment, error) {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
 
-	if config.EnvironmentName == "" {
-		return nil, microerror.Maskf(invalidConfigError, "%T.EnvironmentName must not be empty", config)
-	}
-
 	d := &Deployment{
 		g8sClient: config.G8sClient,
 		k8sClient: config.K8sClient,
 		logger:    config.Logger,
-
-		environmentName: config.EnvironmentName,
 	}
 
 	return d, nil
@@ -172,8 +159,6 @@ func (d *Deployment) getDeploymentsClient(cr providerv1alpha1.AzureConfig) (*res
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
-	config.EnvironmentName = d.environmentName
-
 	azureClients, err := client.NewAzureClientSet(*config)
 	if err != nil {
 		return nil, microerror.Mask(err)
