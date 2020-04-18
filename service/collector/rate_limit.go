@@ -119,6 +119,15 @@ func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
 	}
 	clientSets[&u.cpAzureClientSetConfig] = operatorClientSet
 
+	for clientConfig := range clientSets {
+		u.logger.Log(clientConfig.EnvironmentName)
+		u.logger.Log(clientConfig.TenantID)
+		u.logger.Log(clientConfig.SubscriptionID)
+		u.logger.Log(clientConfig.ClientID)
+		u.logger.Log(clientConfig.ClientSecret)
+		u.logger.Log(clientConfig.PartnerID)
+	}
+
 	ctx := context.Background()
 
 	// We track RateLimit metrics for each client labeled by SubscriptionID and
