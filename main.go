@@ -117,6 +117,7 @@ func mainError() error {
 	daemonCommand.PersistentFlags().String(f.Service.Azure.ClientSecret, "", "Secret of the Active Directory Service Principal.")
 	daemonCommand.PersistentFlags().String(f.Service.Azure.EnvironmentName, "AZUREPUBLICCLOUD", "Azure Cloud Environment identifier.")
 	daemonCommand.PersistentFlags().String(f.Service.Azure.Location, "westeurope", "Location of the host and guset clusters.")
+	daemonCommand.PersistentFlags().String(f.Service.Azure.PartnerID, "", "Partner ID used to link consumption with our company.")
 	daemonCommand.PersistentFlags().String(f.Service.Azure.SubscriptionID, "", "ID of the Azure Subscription.")
 	daemonCommand.PersistentFlags().String(f.Service.Azure.TenantID, "", "ID of the Active Directory Tenant.")
 	daemonCommand.PersistentFlags().String(f.Service.Azure.ControlPlaneResourceGroup, "", "Control plane resource group name.")

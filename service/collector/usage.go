@@ -92,7 +92,7 @@ func NewUsage(config UsageConfig) (*Usage, error) {
 
 func (u *Usage) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
-	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(u.k8sClient, u.cpAzureClientSetConfig.EnvironmentName)
+	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(u.k8sClient)
 	if err != nil {
 		return microerror.Mask(err)
 	}

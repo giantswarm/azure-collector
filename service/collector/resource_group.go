@@ -71,7 +71,7 @@ func NewResourceGroup(config ResourceGroupConfig) (*ResourceGroup, error) {
 
 func (r *ResourceGroup) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
-	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(r.k8sClient, r.cpAzureClientSetConfig.EnvironmentName)
+	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(r.k8sClient)
 	if err != nil {
 		return microerror.Mask(err)
 	}

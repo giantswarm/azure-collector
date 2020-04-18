@@ -106,7 +106,7 @@ func NewRateLimit(config RateLimitConfig) (*RateLimit, error) {
 }
 
 func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
-	clientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(u.k8sClient, u.cpAzureClientSetConfig.EnvironmentName)
+	clientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(u.k8sClient)
 	if err != nil {
 		return microerror.Mask(err)
 	}

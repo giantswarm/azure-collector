@@ -15,55 +15,17 @@ const (
 	SubscriptionIDKey   = "azure.azureoperator.subscriptionid"
 	TenantIDKey         = "azure.azureoperator.tenantid"
 	PartnerIDKey        = "azure.azureoperator.partnerid"
-	defaultAzureGUID    = "37f13270-5c7a-56ff-9211-8426baaeaabd"
 	SecretLabel         = "giantswarm.io/managed-by=credentiald"
 	credentialNamespace = "giantswarm"
 )
 
-func GetAzureConfig(k8sClient kubernetes.Interface, name string, namespace string) (*client.AzureClientSetConfig, error) {
+func GetAzureConfigFromSecretName(k8sClient kubernetes.Interface, name string, namespace string) (*client.AzureClientSetConfig, error) {
 	credential, err := k8sClient.CoreV1().Secrets(namespace).Get(name, apismetav1.GetOptions{})
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
 
-	clientID, err := valueFromSecret(credential, ClientIDKey)
-	if err != nil {
-		return nil, microerror.Mask(err)
-	}
-
-	clientSecret, err := valueFromSecret(credential, ClientSecretKey)
-	if err != nil {
-		return nil, microerror.Mask(err)
-	}
-
-	subscriptionID, err := valueFromSecret(credential, SubscriptionIDKey)
-	if err != nil {
-		return nil, microerror.Mask(err)
-	}
-
-	tenantID, err := valueFromSecret(credential, TenantIDKey)
-	if err != nil {
-		return nil, microerror.Mask(err)
-	}
-
-	partnerID, err := valueFromSecret(credential, PartnerIDKey)
-	if err != nil {
-		// No having partnerID in the secret means that customer has not
-		// upgraded yet to use the Azure Partner Program. In that case we set a
-		// constant random generated GUID that we haven't registered with Azure.
-		// When all customers have migrated, we should error out instead.
-		partnerID = defaultAzureGUID
-	}
-
-	c := &client.AzureClientSetConfig{
-		ClientID:       clientID,
-		ClientSecret:   clientSecret,
-		SubscriptionID: subscriptionID,
-		TenantID:       tenantID,
-		PartnerID:      partnerID,
-	}
-
-	return c, nil
+	return GetAzureConfigFromSecret(credential)
 }
 
 func GetAzureConfigFromSecret(credential *v1.Secret) (*client.AzureClientSetConfig, error) {
@@ -89,25 +51,25 @@ func GetAzureConfigFromSecret(credential *v1.Secret) (*client.AzureClientSetConf
 
 	partnerID, err := valueFromSecret(credential, PartnerIDKey)
 	if err != nil {
-		// No having partnerID in the secret means that customer has not
-		// upgraded yet to use the Azure Partner Program. In that case we set a
-		// constant random generated GUID that we haven't registered with Azure.
-		// When all customers have migrated, we should error out instead.
-		partnerID = defaultAzureGUID
+		partnerID = ""
 	}
 
-	c := &client.AzureClientSetConfig{
-		ClientID:       clientID,
-		ClientSecret:   clientSecret,
-		SubscriptionID: subscriptionID,
-		TenantID:       tenantID,
-		PartnerID:      partnerID,
+	azureClientSetConfig, err := client.NewAzureClientSetConfig(
+		clientID,
+		clientSecret,
+		subscriptionID,
+		tenantID,
+		"",
+		partnerID,
+	)
+	if err != nil {
+		return nil, microerror.Mask(err)
 	}
 
-	return c, nil
+	return &azureClientSetConfig, nil
 }
 
-func GetAzureClientSetsFromCredentialSecrets(k8sclient kubernetes.Interface, environmentName string) (map[*client.AzureClientSetConfig]*client.AzureClientSet, error) {
+func GetAzureClientSetsFromCredentialSecrets(k8sclient kubernetes.Interface) (map[*client.AzureClientSetConfig]*client.AzureClientSet, error) {
 	azureClientSets := map[*client.AzureClientSetConfig]*client.AzureClientSet{}
 
 	secrets, err := GetCredentialSecrets(k8sclient)
@@ -121,8 +83,6 @@ func GetAzureClientSetsFromCredentialSecrets(k8sclient kubernetes.Interface, env
 			return azureClientSets, microerror.Mask(err)
 		}
 
-		azureClientSetConfig.EnvironmentName = environmentName
-
 		clientSet, err := client.NewAzureClientSet(*azureClientSetConfig)
 		if err != nil {
 			return nil, microerror.Mask(err)
@@ -134,10 +94,10 @@ func GetAzureClientSetsFromCredentialSecrets(k8sclient kubernetes.Interface, env
 	return azureClientSets, nil
 }
 
-func GetAzureClientSetsFromCredentialSecretsBySubscription(k8sclient kubernetes.Interface, environmentName string) (map[string]*client.AzureClientSet, error) {
+func GetAzureClientSetsFromCredentialSecretsBySubscription(k8sclient kubernetes.Interface) (map[string]*client.AzureClientSet, error) {
 	azureClientSets := map[string]*client.AzureClientSet{}
 
-	rawAzureClientSets, err := GetAzureClientSetsFromCredentialSecrets(k8sclient, environmentName)
+	rawAzureClientSets, err := GetAzureClientSetsFromCredentialSecrets(k8sclient)
 	if err != nil {
 		return azureClientSets, microerror.Mask(err)
 	}

@@ -6,6 +6,7 @@ type Azure struct {
 	EnvironmentName           string
 	ControlPlaneResourceGroup string
 	Location                  string
+	PartnerID                 string
 	SubscriptionID            string
 	TenantID                  string
 }

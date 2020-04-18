@@ -24,21 +24,46 @@ type AzureClientSetConfig struct {
 	PartnerID string
 }
 
-func (c AzureClientSetConfig) Validate() error {
-	if c.ClientID == "" {
-		return microerror.Maskf(invalidConfigError, "%T.ClientID must not be empty", c)
+const (
+	defaultAzureEnvironment = "AZUREPUBLICCLOUD"
+	defaultAzureGUID        = "37f13270-5c7a-56ff-9211-8426baaeaabd"
+)
+
+// NewAzureClientSetConfig creates a new azure client set config and applies defaults.
+func NewAzureClientSetConfig(clientid, clientsecret, subscriptionid, tenantid, environmentname, partnerid string) (AzureClientSetConfig, error) {
+	if clientid == "" {
+		return AzureClientSetConfig{}, microerror.Maskf(invalidConfigError, "ClientID must not be empty")
 	}
-	if c.ClientSecret == "" {
-		return microerror.Maskf(invalidConfigError, "%T.ClientSecret must not be empty", c)
+	if clientsecret == "" {
+		return AzureClientSetConfig{}, microerror.Maskf(invalidConfigError, "ClientSecret must not be empty")
 	}
-	if c.SubscriptionID == "" {
-		return microerror.Maskf(invalidConfigError, "%T.SubscriptionID must not be empty", c)
+	if subscriptionid == "" {
+		return AzureClientSetConfig{}, microerror.Maskf(invalidConfigError, "SubscriptionID must not be empty")
 	}
-	if c.TenantID == "" {
-		return microerror.Maskf(invalidConfigError, "%T.TenantID must not be empty", c)
+	if tenantid == "" {
+		return AzureClientSetConfig{}, microerror.Maskf(invalidConfigError, "TenantID must not be empty")
 	}
 
-	return nil
+	if environmentname == "" {
+		environmentname = defaultAzureEnvironment
+	}
+
+	// No having partnerID in the secret means that customer has not
+	// upgraded yet to use the Azure Partner Program. In that case we set a
+	// constant random generated GUID that we haven't registered with Azure.
+	// When all customers have migrated, we should error out instead.
+	if partnerid == "" {
+		partnerid = defaultAzureGUID
+	}
+
+	return AzureClientSetConfig{
+		ClientID:        clientid,
+		ClientSecret:    clientsecret,
+		EnvironmentName: environmentname,
+		PartnerID:       partnerid,
+		SubscriptionID:  subscriptionid,
+		TenantID:        tenantid,
+	}, nil
 }
 
 // clientConfig contains all essential information to create an Azure client.

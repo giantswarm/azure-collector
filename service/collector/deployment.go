@@ -168,7 +168,7 @@ func (d *Deployment) Describe(ch chan<- *prometheus.Desc) error {
 }
 
 func (d *Deployment) getDeploymentsClient(cr providerv1alpha1.AzureConfig) (*resources.DeploymentsClient, error) {
-	config, err := credential.GetAzureConfig(d.k8sClient, key.CredentialName(cr), key.CredentialNamespace(cr))
+	config, err := credential.GetAzureConfigFromSecretName(d.k8sClient, key.CredentialName(cr), key.CredentialNamespace(cr))
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}

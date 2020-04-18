@@ -125,7 +125,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 	{
 		var doneSubscriptions []string
 		for _, cr := range crs {
-			config, err := credential.GetAzureConfig(u.k8sClient, key.CredentialName(cr), key.CredentialNamespace(cr))
+			config, err := credential.GetAzureConfigFromSecretName(u.k8sClient, key.CredentialName(cr), key.CredentialNamespace(cr))
 			if err != nil {
 				return microerror.Mask(err)
 			}

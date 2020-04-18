@@ -118,20 +118,26 @@ func New(config Config) (*Service, error) {
 		}
 	}
 
+	azureClientSetConfig, err := client.NewAzureClientSetConfig(
+		config.Viper.GetString(config.Flag.Service.Azure.ClientID),
+		config.Viper.GetString(config.Flag.Service.Azure.ClientSecret),
+		config.Viper.GetString(config.Flag.Service.Azure.SubscriptionID),
+		config.Viper.GetString(config.Flag.Service.Azure.TenantID),
+		config.Viper.GetString(config.Flag.Service.Azure.EnvironmentName),
+		config.Viper.GetString(config.Flag.Service.Azure.PartnerID),
+	)
+	if err != nil {
+		return nil, microerror.Mask(err)
+	}
+
 	var operatorCollector *collector.Set
 	{
 		c := collector.SetConfig{
 			ControlPlaneResourceGroup: config.Viper.GetString(config.Flag.Service.Azure.ControlPlaneResourceGroup),
 			Location:                  config.Viper.GetString(config.Flag.Service.Azure.Location),
 			Logger:                    config.Logger,
-			HostAzureClientSetConfig: client.AzureClientSetConfig{
-				ClientID:        config.Viper.GetString(config.Flag.Service.Azure.ClientID),
-				ClientSecret:    config.Viper.GetString(config.Flag.Service.Azure.ClientSecret),
-				EnvironmentName: config.Viper.GetString(config.Flag.Service.Azure.EnvironmentName),
-				SubscriptionID:  config.Viper.GetString(config.Flag.Service.Azure.SubscriptionID),
-				TenantID:        config.Viper.GetString(config.Flag.Service.Azure.TenantID),
-			},
-			K8sClient: k8sClient,
+			HostAzureClientSetConfig:  azureClientSetConfig,
+			K8sClient:                 k8sClient,
 		}
 
 		operatorCollector, err = collector.NewSet(c)
