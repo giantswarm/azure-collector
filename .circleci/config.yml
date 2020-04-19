@@ -90,6 +90,7 @@ workflows:
           name: push-azure-collector-to-azure-app-collection
           app_name: "azure-collector"
           app_collection_repo: "azure-app-collection"
+          unique: "true"
           requires:
             - push-azure-collector-to-control-plane-app-catalog
           filters:
