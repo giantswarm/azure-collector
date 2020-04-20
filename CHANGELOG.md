@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.3] 2020-04-20
+
 ### Changed
 
 - Collector doesn't use credential paramaters, rather reads credentials from secrets in the control plane.
