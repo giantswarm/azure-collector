@@ -123,7 +123,7 @@ func GetAzureClientSetsByCluster(k8sclient kubernetes.Interface, g8sclient versi
 			opts := apismetav1.ListOptions{
 				Continue: mark,
 			}
-			list, err := g8sclient.ProviderV1alpha1().AzureConfigs("").List(opts)
+			list, err := g8sclient.ProviderV1alpha1().AzureConfigs(apismetav1.NamespaceAll).List(opts)
 			if err != nil {
 				return azureClientSets, microerror.Mask(err)
 			}
