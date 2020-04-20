@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Collector doesn't use credential paramaters, rather reads credentials from secrets in the control plane.
+- Removed `Validate()` method for azureClientSetConfig. Use factory method instead.
+- Make collectors use utility methods in the `credential` package.
+
 ## [1.0.1] 2020-04-17
 
 ### Fixed
