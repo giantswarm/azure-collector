@@ -13,7 +13,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/giantswarm/azure-collector/client"
 	"github.com/giantswarm/azure-collector/pkg/project"
 	"github.com/giantswarm/azure-collector/service/credential"
 )
@@ -59,19 +58,17 @@ var (
 )
 
 type RateLimitConfig struct {
-	G8sClient              versioned.Interface
-	K8sClient              kubernetes.Interface
-	Logger                 micrologger.Logger
-	Location               string
-	CPAzureClientSetConfig client.AzureClientSetConfig
+	G8sClient versioned.Interface
+	K8sClient kubernetes.Interface
+	Logger    micrologger.Logger
+	Location  string
 }
 
 type RateLimit struct {
-	g8sClient              versioned.Interface
-	k8sClient              kubernetes.Interface
-	logger                 micrologger.Logger
-	location               string
-	cpAzureClientSetConfig client.AzureClientSetConfig
+	g8sClient versioned.Interface
+	k8sClient kubernetes.Interface
+	logger    micrologger.Logger
+	location  string
 }
 
 func init() {
@@ -79,6 +76,9 @@ func init() {
 	prometheus.MustRegister(writesErrorCounter)
 }
 
+// NewRateLimit exposes metrics about the Azure resource group client rate limit.
+// It creates and fetches a resource group. That way it can inspect the Azure API response to find rate limit headers.
+// It uses the credentials found in the "credential-*" secrets of the control plane.
 func NewRateLimit(config RateLimitConfig) (*RateLimit, error) {
 	if config.G8sClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.G8sClient must not be empty", config)
@@ -89,35 +89,25 @@ func NewRateLimit(config RateLimitConfig) (*RateLimit, error) {
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
-
 	if config.Location == "" {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
 	}
 
 	u := &RateLimit{
-		g8sClient:              config.G8sClient,
-		k8sClient:              config.K8sClient,
-		logger:                 config.Logger,
-		location:               config.Location,
-		cpAzureClientSetConfig: config.CPAzureClientSetConfig,
+		g8sClient: config.G8sClient,
+		k8sClient: config.K8sClient,
+		logger:    config.Logger,
+		location:  config.Location,
 	}
 
 	return u, nil
 }
 
 func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
-	clientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(u.k8sClient, u.cpAzureClientSetConfig.EnvironmentName)
+	clientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(u.k8sClient)
 	if err != nil {
 		return microerror.Mask(err)
 	}
-
-	// The operator potentially uses a different set of credentials than
-	// tenant clusters, so we add the operator credentials as well.
-	operatorClientSet, err := client.NewAzureClientSet(u.cpAzureClientSetConfig)
-	if err != nil {
-		return microerror.Mask(err)
-	}
-	clientSets[&u.cpAzureClientSetConfig] = operatorClientSet
 
 	ctx := context.Background()
 

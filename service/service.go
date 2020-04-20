@@ -15,7 +15,6 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/client-go/rest"
 
-	"github.com/giantswarm/azure-collector/client"
 	"github.com/giantswarm/azure-collector/flag"
 	"github.com/giantswarm/azure-collector/pkg/project"
 	"github.com/giantswarm/azure-collector/service/collector"
@@ -121,17 +120,10 @@ func New(config Config) (*Service, error) {
 	var operatorCollector *collector.Set
 	{
 		c := collector.SetConfig{
-			ControlPlaneResourceGroup: config.Viper.GetString(config.Flag.Service.Azure.ControlPlaneResourceGroup),
-			Location:                  config.Viper.GetString(config.Flag.Service.Azure.Location),
+			ControlPlaneResourceGroup: config.Viper.GetString(config.Flag.Service.ControlPlaneResourceGroup),
+			Location:                  config.Viper.GetString(config.Flag.Service.Location),
 			Logger:                    config.Logger,
-			HostAzureClientSetConfig: client.AzureClientSetConfig{
-				ClientID:        config.Viper.GetString(config.Flag.Service.Azure.ClientID),
-				ClientSecret:    config.Viper.GetString(config.Flag.Service.Azure.ClientSecret),
-				EnvironmentName: config.Viper.GetString(config.Flag.Service.Azure.EnvironmentName),
-				SubscriptionID:  config.Viper.GetString(config.Flag.Service.Azure.SubscriptionID),
-				TenantID:        config.Viper.GetString(config.Flag.Service.Azure.TenantID),
-			},
-			K8sClient: k8sClient,
+			K8sClient:                 k8sClient,
 		}
 
 		operatorCollector, err = collector.NewSet(c)

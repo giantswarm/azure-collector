@@ -10,7 +10,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/giantswarm/azure-collector/client"
 	"github.com/giantswarm/azure-collector/service/credential"
 )
 
@@ -44,8 +43,7 @@ type UsageConfig struct {
 	K8sClient kubernetes.Interface
 	Logger    micrologger.Logger
 
-	Location               string
-	CPAzureClientSetConfig client.AzureClientSetConfig
+	Location string
 }
 
 type Usage struct {
@@ -55,14 +53,15 @@ type Usage struct {
 
 	usageScrapeError prometheus.Counter
 
-	location               string
-	cpAzureClientSetConfig client.AzureClientSetConfig
+	location string
 }
 
 func init() {
 	prometheus.MustRegister(scrapeErrorCounter)
 }
 
+// NewUsage exposes metrics about the quota usage on Azure so we can alert when we are reaching the quota limits.
+// It exposes quota metrics for every subscription found in the "credential-*" secrets of the control plane.
 func NewUsage(config UsageConfig) (*Usage, error) {
 	if config.G8sClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.G8sClient must not be empty", config)
@@ -79,12 +78,11 @@ func NewUsage(config UsageConfig) (*Usage, error) {
 	}
 
 	u := &Usage{
-		g8sClient:              config.G8sClient,
-		k8sClient:              config.K8sClient,
-		logger:                 config.Logger,
-		usageScrapeError:       scrapeErrorCounter,
-		location:               config.Location,
-		cpAzureClientSetConfig: config.CPAzureClientSetConfig,
+		g8sClient:        config.G8sClient,
+		k8sClient:        config.K8sClient,
+		logger:           config.Logger,
+		usageScrapeError: scrapeErrorCounter,
+		location:         config.Location,
 	}
 
 	return u, nil
@@ -92,18 +90,10 @@ func NewUsage(config UsageConfig) (*Usage, error) {
 
 func (u *Usage) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
-	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(u.k8sClient, u.cpAzureClientSetConfig.EnvironmentName)
+	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(u.k8sClient)
 	if err != nil {
 		return microerror.Mask(err)
 	}
-
-	// The operator potentially uses a different set of credentials than
-	// tenant clusters, so we add the operator credentials as well.
-	operatorClientSet, err := client.NewAzureClientSet(u.cpAzureClientSetConfig)
-	if err != nil {
-		return microerror.Mask(err)
-	}
-	clientSets[u.cpAzureClientSetConfig.SubscriptionID] = operatorClientSet
 
 	// We track usage metrics for each client labeled by subscription.
 	// That way we prevent duplicated metrics.

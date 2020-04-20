@@ -52,11 +52,6 @@ func init() {
 
 // NewAzureClientSet returns the Azure API clients.
 func NewAzureClientSet(config AzureClientSetConfig) (*AzureClientSet, error) {
-	err := config.Validate()
-	if err != nil {
-		return nil, microerror.Mask(err)
-	}
-
 	// Returns environment object contains all API endpoints for specific Azure
 	// cloud. For empty config.EnvironmentName returns Azure public cloud.
 	env, err := parseAzureEnvironment(config.EnvironmentName)
