@@ -30,17 +30,17 @@ const (
 )
 
 // NewAzureClientSetConfig creates a new azure client set config and applies defaults.
-func NewAzureClientSetConfig(clientid, clientsecret, subscriptionid, tenantid, environmentname, partnerid string) (AzureClientSetConfig, error) {
-	if clientid == "" {
+func NewAzureClientSetConfig(clientID, clientsecret, subscriptionID, tenantID, environmentname, partnerID string) (AzureClientSetConfig, error) {
+	if clientID == "" {
 		return AzureClientSetConfig{}, microerror.Maskf(invalidConfigError, "ClientID must not be empty")
 	}
 	if clientsecret == "" {
 		return AzureClientSetConfig{}, microerror.Maskf(invalidConfigError, "ClientSecret must not be empty")
 	}
-	if subscriptionid == "" {
+	if subscriptionID == "" {
 		return AzureClientSetConfig{}, microerror.Maskf(invalidConfigError, "SubscriptionID must not be empty")
 	}
-	if tenantid == "" {
+	if tenantID == "" {
 		return AzureClientSetConfig{}, microerror.Maskf(invalidConfigError, "TenantID must not be empty")
 	}
 
@@ -52,17 +52,17 @@ func NewAzureClientSetConfig(clientid, clientsecret, subscriptionid, tenantid, e
 	// upgraded yet to use the Azure Partner Program. In that case we set a
 	// constant random generated GUID that we haven't registered with Azure.
 	// When all customers have migrated, we should error out instead.
-	if partnerid == "" {
-		partnerid = defaultAzureGUID
+	if partnerID == "" {
+		partnerID = defaultAzureGUID
 	}
 
 	return AzureClientSetConfig{
-		ClientID:        clientid,
+		ClientID:        clientID,
 		ClientSecret:    clientsecret,
 		EnvironmentName: environmentname,
-		PartnerID:       partnerid,
-		SubscriptionID:  subscriptionid,
-		TenantID:        tenantid,
+		PartnerID:       partnerID,
+		SubscriptionID:  subscriptionID,
+		TenantID:        tenantID,
 	}, nil
 }
 
