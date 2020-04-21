@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Use Release.Revision in annotation for Helm 3 compatibility.
+
+
+
 ## [1.0.3] 2020-04-20
 
 ### Changed
