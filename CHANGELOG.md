@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-## [Unreleased]
+## [1.0.4] 2020-04-22
 
 ### Changed
 
@@ -43,6 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/giantswarm/azure-collector/compare/v1.0.0...HEAD
-
+[Unreleased]: https://github.com/giantswarm/azure-collector/compare/v1.0.4...HEAD
+[1.0.4]: https://github.com/giantswarm/azure-collector/releases/tag/v1.0.4
+[1.0.3]: https://github.com/giantswarm/azure-collector/releases/tag/v1.0.3
+[1.0.2]: https://github.com/giantswarm/azure-collector/releases/tag/v1.0.2
+[1.0.1]: https://github.com/giantswarm/azure-collector/releases/tag/v1.0.1
 [1.0.0]: https://github.com/giantswarm/azure-collector/releases/tag/v1.0.0
