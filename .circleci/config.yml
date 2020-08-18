@@ -1,5 +1,5 @@
 orbs:
-  architect: giantswarm/architect@dev:add-nancy # Comment
+  architect: giantswarm/architect@dev:add-nancy # Comment for CI
 
 version: 2.1
 jobs:
