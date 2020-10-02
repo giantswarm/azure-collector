@@ -154,6 +154,8 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 					headers = detailed.Response.Header[vmssVMListHeaderName]
 				}
 
+				u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("Response: %v", result.Response().Response.Response))
+
 				u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("1) number of headers: %d", len(headers)))
 
 				if len(headers) == 0 {
