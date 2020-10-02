@@ -131,7 +131,6 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 			if inArray(doneSubscriptions, config.SubscriptionID) {
 				continue
 			}
-			doneSubscriptions = append(doneSubscriptions, config.SubscriptionID)
 
 			azureClients, err := client.NewAzureClientSet(*config)
 			if err != nil {
@@ -161,6 +160,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 				if len(headers) == 0 {
 					headers = result.Response().Response.Header[vmssVMListHeaderName]
+					doneSubscriptions = append(doneSubscriptions, config.SubscriptionID)
 				}
 
 				u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("2) number of headers: %d", len(headers)))
