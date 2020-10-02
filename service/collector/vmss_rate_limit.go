@@ -154,9 +154,13 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 					headers = detailed.Response.Header[vmssVMListHeaderName]
 				}
 
+				u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("1) number of headers: %d", len(headers)))
+
 				if len(headers) == 0 {
 					headers = result.Response().Response.Header[vmssVMListHeaderName]
 				}
+
+				u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("2) number of headers: %d", len(headers)))
 
 				// Header not found, we consider this an error.
 				if len(headers) == 0 {
@@ -165,6 +169,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 				}
 
 				for _, l := range headers {
+					u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("Considering header: %s", l))
 					// Limits are a single comma separated string.
 					tokens := strings.SplitN(l, ",", -1)
 					for _, t := range tokens {
