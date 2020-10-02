@@ -143,8 +143,9 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 				var headers []string
 
 				// Calling the VMSS list machines API to get the metrics.
-				result, err := azureClients.VirtualMachineScaleSetVMsClient.ListComplete(ctx, cr.Name, fmt.Sprintf("%s-worker", cr.Name), "", "", "")
+				result, err := azureClients.VirtualMachineScaleSetVMsClient.ListComplete(ctx, cr.Name, fmt.Sprintf("%s-master-%s", cr.Name, cr.Name), "", "", "")
 				if err != nil {
+					u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Error calling azure API: %s", err))
 					detailed, ok := err.(autorest.DetailedError)
 					if !ok {
 						u.logger.LogCtx(ctx, fmt.Sprintf("Error listing VM instances on %s: %s", cr.Name, err.Error()))
@@ -153,6 +154,8 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 					err = nil
 					headers = detailed.Response.Header[vmssVMListHeaderName]
 				}
+
+				u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("Response: %v", result.Response().Response.Response))
 
 				u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("1) number of headers: %d", len(headers)))
 
