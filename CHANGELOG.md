@@ -6,14 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [Unreleased]
+
+### Changed
+
+- Using right VMSS name after node pool changes in azure-operator.
 
 ## [1.0.4] 2020-04-23
 
 ### Changed
 
 - Use Release.Revision in annotation for Helm 3 compatibility.
-
-
 
 ## [1.0.3] 2020-04-20
 
