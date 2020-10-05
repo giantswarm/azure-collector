@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/giantswarm/apiextensions/pkg/clientset/versioned"
+	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
@@ -69,7 +69,7 @@ func NewDeployment(config DeploymentConfig) (*Deployment, error) {
 
 func (d *Deployment) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
-	azureClientSets, err := credential.GetAzureClientSetsByCluster(d.k8sClient, d.g8sClient)
+	azureClientSets, err := credential.GetAzureClientSetsByCluster(ctx, d.k8sClient, d.g8sClient)
 	if err != nil {
 		return microerror.Mask(err)
 	}

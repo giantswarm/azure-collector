@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/Azure/go-autorest/autorest"
-	providerv1alpha1 "github.com/giantswarm/apiextensions/pkg/apis/provider/v1alpha1"
-	"github.com/giantswarm/apiextensions/pkg/clientset/versioned"
+	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
+	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
@@ -83,6 +83,8 @@ func NewVMSSRateLimit(config VMSSRateLimitConfig) (*VMSSRateLimit, error) {
 }
 
 func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
+	ctx := context.Background()
+
 	// Remove 429 from the retriable error codes.
 	original := autorest.StatusCodesForRetry
 	defer func() {
@@ -105,7 +107,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 			opts := metav1.ListOptions{
 				Continue: mark,
 			}
-			list, err := u.g8sClient.ProviderV1alpha1().AzureConfigs(metav1.NamespaceAll).List(opts)
+			list, err := u.g8sClient.ProviderV1alpha1().AzureConfigs(metav1.NamespaceAll).List(ctx, opts)
 			if err != nil {
 				return microerror.Mask(err)
 			}
@@ -117,12 +119,10 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 		}
 	}
 
-	ctx := context.Background()
-
 	{
 		var doneSubscriptions []string
 		for _, cr := range crs {
-			config, err := credential.GetAzureConfigFromSecretName(u.k8sClient, key.CredentialName(cr), key.CredentialNamespace(cr))
+			config, err := credential.GetAzureConfigFromSecretName(ctx, u.k8sClient, key.CredentialName(cr), key.CredentialNamespace(cr))
 			if err != nil {
 				return microerror.Mask(err)
 			}
