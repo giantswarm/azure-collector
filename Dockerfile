@@ -1,7 +1,5 @@
-FROM alpine:3.8
-
+FROM alpine:3.12
+WORKDIR /app
 RUN apk add --no-cache ca-certificates
-
-ADD ./azure-collector /azure-collector
-
-ENTRYPOINT ["/azure-collector"]
+COPY azure-collector /app
+ENTRYPOINT ["/app/azure-collector"]
