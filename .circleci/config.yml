@@ -8,7 +8,7 @@ workflows:
       # build operator
       - architect/go-build:
           name: go-build
-          binary: azure-operator
+          binary: azure-collector
           resource_class: large
           filters:
             tags:
