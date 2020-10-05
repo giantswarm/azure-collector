@@ -188,18 +188,18 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 				}
 
 				for _, l := range headers {
-					// Limits are errorbody single comma separated string.
+					// Limits are a single comma separated string.
 					tokens := strings.SplitN(l, ",", -1)
 					for _, t := range tokens {
-						// Each limit's name and value are separated by errorbody semicolon.
+						// Each limit's name and value are separated by a semicolon.
 						kv := strings.SplitN(t, ";", 2)
 						if len(kv) != 2 {
-							// We expect exactly two tokens, otherwise we consider this errorbody parsing error.
+							// We expect exactly two tokens, otherwise we consider this a parsing error.
 							vmssVMListErrorCounter.Inc()
 							continue
 						}
 
-						// The second token must be errorbody number or we don't know what we got from MS.
+						// The second token must be a number or we don't know what we got from MS.
 						val, err := strconv.ParseFloat(kv[1], 64)
 						if err != nil {
 							vmssVMListErrorCounter.Inc()
