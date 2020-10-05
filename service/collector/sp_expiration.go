@@ -82,7 +82,9 @@ func NewSPExpiration(config SPExpirationConfig) (*SPExpiration, error) {
 }
 
 func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
-	azureClientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(v.k8sClient)
+	ctx := context.Background()
+
+	azureClientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(ctx, v.k8sClient)
 	if err != nil {
 		return microerror.Mask(err)
 	}
@@ -90,8 +92,6 @@ func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 	failedScrapes := make(map[string]*client.AzureClientSetConfig)
 
 	for azureClientSetConfig := range azureClientSets {
-		ctx := context.Background()
-
 		c, err := v.getApplicationsClient(azureClientSetConfig)
 		if err != nil {
 			// Ignore but log

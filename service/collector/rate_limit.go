@@ -7,7 +7,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/giantswarm/apiextensions/pkg/clientset/versioned"
+	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
@@ -104,12 +104,12 @@ func NewRateLimit(config RateLimitConfig) (*RateLimit, error) {
 }
 
 func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
-	clientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(u.k8sClient)
+	ctx := context.Background()
+
+	clientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(ctx, u.k8sClient)
 	if err != nil {
 		return microerror.Mask(err)
 	}
-
-	ctx := context.Background()
 
 	// We track RateLimit metrics for each client labeled by SubscriptionID and
 	// ClientID.
@@ -132,7 +132,7 @@ func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 			writes, err = strconv.ParseFloat(resourceGroup.Response.Header.Get(remainingWritesHeaderName), 64)
 			if err != nil {
-				u.logger.Log("level", "warning", "message", "an error occurred parsing to float the value inside the rate limiting header for write requests", "stack", microerror.Stack(microerror.Mask(err)))
+				u.logger.Log("level", "warning", "message", "an error occurred parsing to float the value inside the rate limiting header for write requests", "stack", microerror.JSON(microerror.Mask(err)))
 				writes = 0
 				writesErrorCounter.Inc()
 			}
@@ -156,7 +156,7 @@ func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 			reads, err = strconv.ParseFloat(groupResponse.Response.Header.Get(remainingReadsHeaderName), 64)
 			if err != nil {
-				u.logger.Log("level", "warning", "message", "an error occurred parsing to float the value inside the rate limiting header for read requests", "stack", microerror.Stack(microerror.Mask(err)))
+				u.logger.Log("level", "warning", "message", "an error occurred parsing to float the value inside the rate limiting header for read requests", "stack", microerror.JSON(microerror.Mask(err)))
 				reads = 0
 				readsErrorCounter.Inc()
 			}

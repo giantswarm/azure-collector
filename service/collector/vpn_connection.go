@@ -67,12 +67,13 @@ func NewVPNConnection(config VPNConnectionConfig) (*VPNConnection, error) {
 }
 
 func (v *VPNConnection) Collect(ch chan<- prometheus.Metric) error {
-	vpnConnectionClient, err := v.getVPNConnectionsClient()
+	ctx := context.Background()
+
+	vpnConnectionClient, err := v.getVPNConnectionsClient(ctx)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
-	ctx := context.Background()
 	resourceGroup := v.resourceGroup
 	connections, err := vpnConnectionClient.ListComplete(ctx, resourceGroup)
 	if err != nil {
@@ -125,8 +126,8 @@ func (v *VPNConnection) Describe(ch chan<- *prometheus.Desc) error {
 	return nil
 }
 
-func (v *VPNConnection) getVPNConnectionsClient() (*network.VirtualNetworkGatewayConnectionsClient, error) {
-	config, err := credential.GetAzureConfigFromSecretName(v.k8sClient, credential.CredentialDefault, credential.CredentialNamespace)
+func (v *VPNConnection) getVPNConnectionsClient(ctx context.Context) (*network.VirtualNetworkGatewayConnectionsClient, error) {
+	config, err := credential.GetAzureConfigFromSecretName(ctx, v.k8sClient, credential.CredentialDefault, credential.CredentialNamespace)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
