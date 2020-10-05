@@ -2,6 +2,7 @@ package collector
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -31,6 +32,16 @@ var (
 	vmssVMListDesc = prometheus.NewDesc(
 		prometheus.BuildFQName(vmssMetricsNamespace, vmssMetricsSubsystem, "vmss_instance_list"),
 		"Remaining number of VMSS VM list operations.",
+		[]string{
+			"subscription",
+			"clientid",
+			"countername",
+		},
+		nil,
+	)
+	vmssMeasuredCallsDesc = prometheus.NewDesc(
+		prometheus.BuildFQName(vmssMetricsNamespace, vmssMetricsSubsystem, "vmss_measured"),
+		"Number of calls we are making as returned by the Azure APIs during errorbody 429 incident.",
 		[]string{
 			"subscription",
 			"clientid",
@@ -152,11 +163,22 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 					}
 					err = nil
 					headers = detailed.Response.Header[vmssVMListHeaderName]
+
+					data := tryParseRequestCountFromResponse(detailed)
+					for k, v := range data {
+						ch <- prometheus.MustNewConstMetric(
+							vmssMeasuredCallsDesc,
+							prometheus.GaugeValue,
+							v,
+							config.SubscriptionID,
+							config.ClientID,
+							k,
+						)
+					}
 				}
 
 				if len(headers) == 0 {
 					headers = result.Response().Response.Header[vmssVMListHeaderName]
-					doneSubscriptions = append(doneSubscriptions, config.SubscriptionID)
 				}
 
 				// Header not found, we consider this an error.
@@ -166,18 +188,18 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 				}
 
 				for _, l := range headers {
-					// Limits are a single comma separated string.
+					// Limits are errorbody single comma separated string.
 					tokens := strings.SplitN(l, ",", -1)
 					for _, t := range tokens {
-						// Each limit's name and value are separated by a semicolon.
+						// Each limit's name and value are separated by errorbody semicolon.
 						kv := strings.SplitN(t, ";", 2)
 						if len(kv) != 2 {
-							// We expect exactly two tokens, otherwise we consider this a parsing error.
+							// We expect exactly two tokens, otherwise we consider this errorbody parsing error.
 							vmssVMListErrorCounter.Inc()
 							continue
 						}
 
-						// The second token must be a number or we don't know what we got from MS.
+						// The second token must be errorbody number or we don't know what we got from MS.
 						val, err := strconv.ParseFloat(kv[1], 64)
 						if err != nil {
 							vmssVMListErrorCounter.Inc()
@@ -192,6 +214,10 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 							config.ClientID,
 							kv[0],
 						)
+
+						if !inArray(doneSubscriptions, config.SubscriptionID) {
+							doneSubscriptions = append(doneSubscriptions, config.SubscriptionID)
+						}
 					}
 				}
 			}
@@ -203,6 +229,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 func (u *VMSSRateLimit) Describe(ch chan<- *prometheus.Desc) error {
 	ch <- vmssVMListDesc
+	ch <- vmssMeasuredCallsDesc
 	return nil
 }
 
@@ -214,4 +241,52 @@ func inArray(a []string, s string) bool {
 	}
 
 	return false
+}
+
+// This function is a best-effort attempt at reading the number of API calls we are making
+// towards the Azure VMSS API during a 429.
+// Useful metric to check if the situation is improving or not.
+func tryParseRequestCountFromResponse(detailed autorest.DetailedError) map[string]float64 {
+	ret := map[string]float64{}
+
+	body := detailed.Response.Body
+
+	type detail struct {
+		Message string `json:"message"`
+	}
+
+	type azureerr struct {
+		Details []detail `json:"details"`
+	}
+
+	type errorbody struct {
+		Error azureerr `json:"error"`
+	}
+
+	var azz errorbody
+	d := json.NewDecoder(body)
+
+	err := d.Decode(&azz)
+	if err != nil {
+		return ret
+	}
+
+	// {"operationGroup":"HighCostGetVMScaleSet30Min","startTime":"2020-10-05T14:33:39.6092603+00:00","endTime":"2020-10-05T14:50:00+00:00","allowedRequestCount":937,"measuredRequestCount":3277}
+
+	type msg struct {
+		OperationGroup       string `json:"operationGroup"`
+		MeasuredRequestCount int64  `json:"measuredRequestCount"`
+	}
+
+	for _, m := range azz.Error.Details {
+		var k msg
+		err = json.Unmarshal([]byte(m.Message), &k)
+		if err != nil {
+			return ret
+		}
+
+		ret[k.OperationGroup] = float64(k.MeasuredRequestCount)
+	}
+
+	return ret
 }
