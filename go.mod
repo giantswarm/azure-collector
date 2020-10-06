@@ -1,6 +1,6 @@
 module github.com/giantswarm/azure-collector
 
-go 1.14
+go 1.15
 
 require (
 	github.com/Azure/azure-sdk-for-go v45.1.0+incompatible
