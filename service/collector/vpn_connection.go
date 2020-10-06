@@ -11,8 +11,8 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/giantswarm/azure-collector/client"
-	"github.com/giantswarm/azure-collector/service/credential"
+	"github.com/giantswarm/azure-collector/v2/client"
+	"github.com/giantswarm/azure-collector/v2/service/credential"
 )
 
 var (

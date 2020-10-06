@@ -17,9 +17,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/giantswarm/azure-collector/client"
-	"github.com/giantswarm/azure-collector/service/collector/key"
-	"github.com/giantswarm/azure-collector/service/credential"
+	"github.com/giantswarm/azure-collector/v2/client"
+	"github.com/giantswarm/azure-collector/v2/service/collector/key"
+	"github.com/giantswarm/azure-collector/v2/service/credential"
 )
 
 const (

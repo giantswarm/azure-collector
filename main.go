@@ -13,11 +13,11 @@ import (
 	"github.com/giantswarm/versionbundle"
 	"github.com/spf13/viper"
 
-	"github.com/giantswarm/azure-collector/pkg/project"
+	"github.com/giantswarm/azure-collector/v2/pkg/project"
 
-	"github.com/giantswarm/azure-collector/flag"
-	"github.com/giantswarm/azure-collector/server"
-	"github.com/giantswarm/azure-collector/service"
+	"github.com/giantswarm/azure-collector/v2/flag"
+	"github.com/giantswarm/azure-collector/v2/server"
+	"github.com/giantswarm/azure-collector/v2/service"
 )
 
 var (
