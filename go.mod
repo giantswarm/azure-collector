@@ -1,6 +1,6 @@
 module github.com/giantswarm/azure-collector
 
-go 1.14
+go 1.15
 
 require (
 	github.com/Azure/azure-sdk-for-go v45.1.0+incompatible
@@ -26,3 +26,5 @@ require (
 	k8s.io/apimachinery v0.18.9
 	k8s.io/client-go v0.18.9
 )
+
+replace github.com/coreos/etcd v3.3.13+incompatible => github.com/coreos/etcd v3.3.24+incompatible
