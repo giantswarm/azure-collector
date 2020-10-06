@@ -15,9 +15,9 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/client-go/rest"
 
-	"github.com/giantswarm/azure-collector/flag"
-	"github.com/giantswarm/azure-collector/pkg/project"
-	"github.com/giantswarm/azure-collector/service/collector"
+	"github.com/giantswarm/azure-collector/v2/flag"
+	"github.com/giantswarm/azure-collector/v2/pkg/project"
+	"github.com/giantswarm/azure-collector/v2/service/collector"
 )
 
 // Config represents the configuration used to create a new service.
