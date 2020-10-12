@@ -111,10 +111,17 @@ func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
 		return microerror.Mask(err)
 	}
 
+	var doneSubscriptions []string
+
 	// We track RateLimit metrics for each client labeled by SubscriptionID and
 	// ClientID.
 	// That way we prevent duplicated metrics.
 	for clientConfig, clientSet := range clientSets {
+		// We want to check only once per subscriptino
+		if inArray(doneSubscriptions, clientSet.GroupsClient.SubscriptionID) {
+			continue
+		}
+
 		// Remaining write requests can be retrieved sending a write request.
 		var writes float64
 		{
@@ -144,6 +151,8 @@ func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
 				clientSet.GroupsClient.SubscriptionID,
 				clientConfig.ClientID,
 			)
+
+			doneSubscriptions = append(doneSubscriptions, clientSet.GroupsClient.SubscriptionID)
 		}
 
 		// Remaining read requests can be retrieved sending a read request.
