@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.1] - 2020-10-12
+
 ### Fixed
 
 - Check for double scrape of the same subscription in the rate limit collector.
@@ -61,7 +63,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/giantswarm/azure-collector/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/giantswarm/azure-collector/compare/v3.0.1...HEAD
+[3.0.1]: https://github.com/giantswarm/azure-collector/compare/v2.0.0...v3.0.1
 [2.0.0]: https://github.com/giantswarm/azure-collector/compare/v1.0.5...v2.0.0
 [1.0.4]: https://github.com/giantswarm/kubernetes-node-exporter/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/giantswarm/kubernetes-node-exporter/compare/v1.0.3...v1.0.4
