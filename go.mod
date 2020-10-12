@@ -8,7 +8,7 @@ require (
 	github.com/Azure/go-autorest/autorest/adal v0.9.5
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/Azure/go-autorest/autorest/validation v0.3.0 // indirect
-	github.com/giantswarm/apiextensions/v2 v2.5.3
+	github.com/giantswarm/apiextensions/v2 v2.6.2
 	github.com/giantswarm/exporterkit v0.2.0
 	github.com/giantswarm/k8sclient/v4 v4.0.0
 	github.com/giantswarm/microendpoint v0.2.0
