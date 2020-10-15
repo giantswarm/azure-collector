@@ -21,6 +21,7 @@ type AzureClientSetConfig struct {
 	SubscriptionID string
 	PartnerID      string
 	TenantID       string
+	GSTenantID     string
 }
 
 const (
@@ -48,7 +49,7 @@ func init() {
 }
 
 // NewAzureClientSetConfig creates a new azure client set config and applies defaults.
-func NewAzureClientSetConfig(authorizer autorest.Authorizer, clientid, clientsecret, subscriptionID, partnerID, tenantID string) (AzureClientSetConfig, error) {
+func NewAzureClientSetConfig(authorizer autorest.Authorizer, clientid, clientsecret, subscriptionID, partnerID, tenantID, gsTenantID string) (AzureClientSetConfig, error) {
 	// No having partnerID in the secret means that customer has not
 	// upgraded yet to use the Azure Partner Program. In that case we set a
 	// constant random generated GUID that we haven't registered with Azure.
@@ -64,12 +65,13 @@ func NewAzureClientSetConfig(authorizer autorest.Authorizer, clientid, clientsec
 		PartnerID:      fmt.Sprintf("pid-%s", partnerID),
 		SubscriptionID: subscriptionID,
 		TenantID:       tenantID,
+		GSTenantID:     gsTenantID,
 	}, nil
 }
 
 // NewAzureClientSet returns the Azure API clients.
 func NewAzureClientSet(config AzureClientSetConfig) (*AzureClientSet, error) {
-	applicationsClient, err := newApplicationsClient(config.ClientID, config.ClientSecret, config.TenantID, config.PartnerID)
+	applicationsClient, err := newApplicationsClient(config.ClientID, config.ClientSecret, config.GSTenantID, config.PartnerID)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}

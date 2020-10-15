@@ -84,6 +84,7 @@ func GetAzureConfigFromSecret(credential *v1.Secret, gsTenantID string) (*client
 		subscriptionID,
 		partnerID,
 		tenantID,
+		gsTenantID,
 	)
 	if err != nil {
 		return nil, microerror.Mask(err)
