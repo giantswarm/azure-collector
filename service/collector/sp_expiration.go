@@ -91,13 +91,18 @@ func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 		return microerror.Mask(err)
 	}
 
+	if len(azureClientSets) < 1 {
+		v.logger.LogCtx(ctx, "level", "debug", "message", "No clusters, skipping SP expiration collector")
+		return nil
+	}
+
 	failedScrapes := make(map[string]*client.AzureClientSetConfig)
 
 	for azureClientSetConfig, clientSet := range azureClientSets {
-		apps, err := clientSet.ApplicationsClient.ListComplete(ctx, fmt.Sprintf("appId eq '%s'", azureClientSetConfig.ClientID))
+		apps, err := clientSet.ApplicationsClient.ListComplete(ctx, "")
 		if err != nil {
 			// Ignore but log
-			v.logger.LogCtx(ctx, "level", "warning", "message", "Unable to get application: ", err.Error())
+			v.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unable to list applications using client %#q", azureClientSetConfig.ClientID), "stack", microerror.JSON(err))
 			failedScrapes[azureClientSetConfig.ClientID] = azureClientSetConfig
 			continue
 		}
@@ -122,6 +127,9 @@ func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 				return microerror.Mask(err)
 			}
 		}
+
+		// We just need to list service principals once, so we can leave the loop.
+		break
 	}
 
 	// Send metrics for failed scrapes as well
