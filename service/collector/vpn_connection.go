@@ -36,6 +36,7 @@ type VPNConnectionConfig struct {
 	Logger    micrologger.Logger
 
 	ResourceGroup string
+	GSTenantID    string
 }
 
 type VPNConnection struct {
@@ -43,6 +44,7 @@ type VPNConnection struct {
 	logger    micrologger.Logger
 
 	resourceGroup string
+	gsTenantID    string
 }
 
 func NewVPNConnection(config VPNConnectionConfig) (*VPNConnection, error) {
@@ -55,12 +57,16 @@ func NewVPNConnection(config VPNConnectionConfig) (*VPNConnection, error) {
 	if config.ResourceGroup == "" {
 		return nil, microerror.Maskf(invalidConfigError, "%T.ResourceGroup must not be empty", config)
 	}
+	if config.GSTenantID == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.GSTenantID must not be empty", config)
+	}
 
 	v := &VPNConnection{
 		k8sClient: config.K8sClient,
 		logger:    config.Logger,
 
 		resourceGroup: config.ResourceGroup,
+		gsTenantID:    config.GSTenantID,
 	}
 
 	return v, nil
@@ -127,7 +133,7 @@ func (v *VPNConnection) Describe(ch chan<- *prometheus.Desc) error {
 }
 
 func (v *VPNConnection) getVPNConnectionsClient(ctx context.Context) (*network.VirtualNetworkGatewayConnectionsClient, error) {
-	config, err := credential.GetAzureConfigFromSecretName(ctx, v.k8sClient, credential.CredentialDefault, credential.CredentialNamespace)
+	config, err := credential.GetAzureConfigFromSecretName(ctx, v.k8sClient, credential.CredentialDefault, credential.CredentialNamespace, v.gsTenantID)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}

@@ -58,15 +58,17 @@ var (
 )
 
 type VMSSRateLimitConfig struct {
-	G8sClient versioned.Interface
-	K8sClient kubernetes.Interface
-	Logger    micrologger.Logger
+	G8sClient  versioned.Interface
+	K8sClient  kubernetes.Interface
+	Logger     micrologger.Logger
+	GSTenantID string
 }
 
 type VMSSRateLimit struct {
-	g8sClient versioned.Interface
-	k8sClient kubernetes.Interface
-	logger    micrologger.Logger
+	g8sClient  versioned.Interface
+	k8sClient  kubernetes.Interface
+	logger     micrologger.Logger
+	gsTenantID string
 }
 
 func init() {
@@ -83,11 +85,15 @@ func NewVMSSRateLimit(config VMSSRateLimitConfig) (*VMSSRateLimit, error) {
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
+	if config.GSTenantID == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.GSTenantID must not be empty", config)
+	}
 
 	u := &VMSSRateLimit{
-		g8sClient: config.G8sClient,
-		k8sClient: config.K8sClient,
-		logger:    config.Logger,
+		g8sClient:  config.G8sClient,
+		k8sClient:  config.K8sClient,
+		logger:     config.Logger,
+		gsTenantID: config.GSTenantID,
 	}
 
 	return u, nil
@@ -133,7 +139,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 	{
 		var doneSubscriptions []string
 		for _, cr := range crs {
-			config, err := credential.GetAzureConfigFromSecretName(ctx, u.k8sClient, key.CredentialName(cr), key.CredentialNamespace(cr))
+			config, err := credential.GetAzureConfigFromSecretName(ctx, u.k8sClient, key.CredentialName(cr), key.CredentialNamespace(cr), u.gsTenantID)
 			if err != nil {
 				return microerror.Mask(err)
 			}
