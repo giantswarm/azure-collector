@@ -9,6 +9,8 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-11-01/network"
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/giantswarm/microerror"
 )
 
@@ -67,7 +69,7 @@ func NewAzureClientSetConfig(authorizer autorest.Authorizer, clientid, clientsec
 
 // NewAzureClientSet returns the Azure API clients.
 func NewAzureClientSet(config AzureClientSetConfig) (*AzureClientSet, error) {
-	applicationsClient, err := newApplicationsClient(config.Authorizer, config.TenantID, config.PartnerID)
+	applicationsClient, err := newApplicationsClient(config.ClientID, config.ClientSecret, config.TenantID, config.PartnerID)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
@@ -145,7 +147,19 @@ func newVirtualMachineScaleSetVMsClient(authorizer autorest.Authorizer, subscrip
 
 	return &client, nil
 }
-func newApplicationsClient(authorizer autorest.Authorizer, tenantID, partnerID string) (*graphrbac.ApplicationsClient, error) {
+func newApplicationsClient(clientID, clientSecret, tenantID, partnerID string) (*graphrbac.ApplicationsClient, error) {
+	credentials := auth.ClientCredentialsConfig{
+		ClientID:     clientID,
+		ClientSecret: clientSecret,
+		TenantID:     tenantID,
+		Resource:     azure.PublicCloud.GraphEndpoint, // This Endpoint is different than using regular ClientCredentialsConfig
+		AADEndpoint:  azure.PublicCloud.ActiveDirectoryEndpoint,
+	}
+	authorizer, err := credentials.Authorizer()
+	if err != nil {
+		return &graphrbac.ApplicationsClient{}, microerror.Mask(err)
+	}
+
 	client := graphrbac.NewApplicationsClient(tenantID)
 	prepareClient(&client.Client, authorizer, partnerID)
 
