@@ -102,7 +102,7 @@ func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 		apps, err := clientSet.ApplicationsClient.ListComplete(ctx, "")
 		if err != nil {
 			// Ignore but log
-			v.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unable to list applications using client %#q", azureClientSetConfig.ClientID), "stack", microerror.JSON(err))
+			v.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unable to list applications using client %#q", azureClientSetConfig.ClientID), "stack", microerror.JSON(err), "gsTenantID", v.gsTenantID)
 			failedScrapes[azureClientSetConfig.ClientID] = azureClientSetConfig
 			continue
 		}

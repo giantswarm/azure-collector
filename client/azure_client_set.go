@@ -149,11 +149,11 @@ func newVirtualMachineScaleSetVMsClient(authorizer autorest.Authorizer, subscrip
 
 	return &client, nil
 }
-func newApplicationsClient(clientID, clientSecret, tenantID, partnerID string) (*graphrbac.ApplicationsClient, error) {
+func newApplicationsClient(clientID, clientSecret, gsTenantID, partnerID string) (*graphrbac.ApplicationsClient, error) {
 	credentials := auth.ClientCredentialsConfig{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
-		TenantID:     tenantID,
+		TenantID:     gsTenantID,
 		Resource:     azure.PublicCloud.GraphEndpoint, // This Endpoint is different than using regular ClientCredentialsConfig
 		AADEndpoint:  azure.PublicCloud.ActiveDirectoryEndpoint,
 	}
@@ -162,7 +162,7 @@ func newApplicationsClient(clientID, clientSecret, tenantID, partnerID string) (
 		return &graphrbac.ApplicationsClient{}, microerror.Mask(err)
 	}
 
-	client := graphrbac.NewApplicationsClient(tenantID)
+	client := graphrbac.NewApplicationsClient(gsTenantID)
 	prepareClient(&client.Client, authorizer, partnerID)
 
 	return &client, nil
