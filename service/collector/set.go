@@ -16,6 +16,7 @@ type SetConfig struct {
 	Location                  string
 	Logger                    micrologger.Logger
 	ControlPlaneResourceGroup string
+	GSTenantID                string
 }
 
 // Set is basically only a wrapper for the operator's collector implementations.
@@ -31,9 +32,10 @@ func NewSet(config SetConfig) (*Set, error) {
 	var deploymentCollector *Deployment
 	{
 		c := DeploymentConfig{
-			G8sClient: config.K8sClient.G8sClient(),
-			K8sClient: config.K8sClient.K8sClient(),
-			Logger:    config.Logger,
+			G8sClient:  config.K8sClient.G8sClient(),
+			K8sClient:  config.K8sClient.K8sClient(),
+			Logger:     config.Logger,
+			GSTenantID: config.GSTenantID,
 		}
 
 		deploymentCollector, err = NewDeployment(c)
@@ -45,8 +47,9 @@ func NewSet(config SetConfig) (*Set, error) {
 	var resourceGroupCollector *ResourceGroup
 	{
 		c := ResourceGroupConfig{
-			K8sClient: config.K8sClient.K8sClient(),
-			Logger:    config.Logger,
+			K8sClient:  config.K8sClient.K8sClient(),
+			Logger:     config.Logger,
+			GSTenantID: config.GSTenantID,
 		}
 
 		resourceGroupCollector, err = NewResourceGroup(c)
@@ -58,10 +61,11 @@ func NewSet(config SetConfig) (*Set, error) {
 	var usageCollector *Usage
 	{
 		c := UsageConfig{
-			G8sClient: config.K8sClient.G8sClient(),
-			K8sClient: config.K8sClient.K8sClient(),
-			Logger:    config.Logger,
-			Location:  config.Location,
+			G8sClient:  config.K8sClient.G8sClient(),
+			K8sClient:  config.K8sClient.K8sClient(),
+			Logger:     config.Logger,
+			Location:   config.Location,
+			GSTenantID: config.GSTenantID,
 		}
 
 		usageCollector, err = NewUsage(c)
@@ -73,10 +77,11 @@ func NewSet(config SetConfig) (*Set, error) {
 	var rateLimitCollector *RateLimit
 	{
 		c := RateLimitConfig{
-			G8sClient: config.K8sClient.G8sClient(),
-			K8sClient: config.K8sClient.K8sClient(),
-			Location:  config.Location,
-			Logger:    config.Logger,
+			G8sClient:  config.K8sClient.G8sClient(),
+			K8sClient:  config.K8sClient.K8sClient(),
+			Location:   config.Location,
+			Logger:     config.Logger,
+			GSTenantID: config.GSTenantID,
 		}
 
 		rateLimitCollector, err = NewRateLimit(c)
@@ -88,8 +93,9 @@ func NewSet(config SetConfig) (*Set, error) {
 	var spExpirationCollector *SPExpiration
 	{
 		c := SPExpirationConfig{
-			K8sClient: config.K8sClient.K8sClient(),
-			Logger:    config.Logger,
+			K8sClient:  config.K8sClient.K8sClient(),
+			Logger:     config.Logger,
+			GSTenantID: config.GSTenantID,
 		}
 
 		spExpirationCollector, err = NewSPExpiration(c)
@@ -101,9 +107,10 @@ func NewSet(config SetConfig) (*Set, error) {
 	var vmssRateLimitCollector *VMSSRateLimit
 	{
 		c := VMSSRateLimitConfig{
-			G8sClient: config.K8sClient.G8sClient(),
-			K8sClient: config.K8sClient.K8sClient(),
-			Logger:    config.Logger,
+			G8sClient:  config.K8sClient.G8sClient(),
+			K8sClient:  config.K8sClient.K8sClient(),
+			Logger:     config.Logger,
+			GSTenantID: config.GSTenantID,
 		}
 
 		vmssRateLimitCollector, err = NewVMSSRateLimit(c)
@@ -119,6 +126,7 @@ func NewSet(config SetConfig) (*Set, error) {
 			Logger:    config.Logger,
 
 			ResourceGroup: config.ControlPlaneResourceGroup,
+			GSTenantID:    config.GSTenantID,
 		}
 
 		vpnConnectionCollector, err = NewVPNConnection(c)

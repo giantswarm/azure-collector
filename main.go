@@ -113,6 +113,11 @@ func mainError() error {
 
 	daemonCommand := newCommand.DaemonCommand().CobraCommand()
 
+	daemonCommand.PersistentFlags().String(f.Service.Azure.ClientID, "", "ID of the Active Directory Service Principal.")
+	daemonCommand.PersistentFlags().String(f.Service.Azure.ClientSecret, "", "Secret of the Active Directory Service Principal.")
+	daemonCommand.PersistentFlags().String(f.Service.Azure.PartnerID, "", "Partner id used in Azure for the attribution partner program.")
+	daemonCommand.PersistentFlags().String(f.Service.Azure.SubscriptionID, "", "ID of the Azure Subscription.")
+	daemonCommand.PersistentFlags().String(f.Service.Azure.TenantID, "", "ID of the Active Directory Tenant.")
 	daemonCommand.PersistentFlags().String(f.Service.ControlPlaneResourceGroup, "", "Control plane resource group name.")
 	daemonCommand.PersistentFlags().String(f.Service.Location, "westeurope", "Azure location of the host and guset clusters.")
 	daemonCommand.PersistentFlags().String(f.Service.Kubernetes.Address, "", "Address used to connect to Kubernetes. When empty in-cluster config is created.")
