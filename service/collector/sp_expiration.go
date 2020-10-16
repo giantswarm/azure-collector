@@ -4,10 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/graphrbac/graphrbac"
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/adal"
-	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
@@ -54,13 +50,15 @@ var (
 )
 
 type SPExpirationConfig struct {
-	K8sClient kubernetes.Interface
-	Logger    micrologger.Logger
+	K8sClient  kubernetes.Interface
+	Logger     micrologger.Logger
+	GSTenantID string
 }
 
 type SPExpiration struct {
-	k8sClient kubernetes.Interface
-	logger    micrologger.Logger
+	k8sClient  kubernetes.Interface
+	logger     micrologger.Logger
+	gsTenantID string
 }
 
 // NewSPExpiration exposes metrics about the expiration date of Azure Service Principals.
@@ -72,10 +70,14 @@ func NewSPExpiration(config SPExpirationConfig) (*SPExpiration, error) {
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
+	if config.GSTenantID == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.GSTenantID must not be empty", config)
+	}
 
 	v := &SPExpiration{
-		k8sClient: config.K8sClient,
-		logger:    config.Logger,
+		k8sClient:  config.K8sClient,
+		logger:     config.Logger,
+		gsTenantID: config.GSTenantID,
 	}
 
 	return v, nil
@@ -84,26 +86,24 @@ func NewSPExpiration(config SPExpirationConfig) (*SPExpiration, error) {
 func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
-	azureClientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(ctx, v.k8sClient)
+	azureClientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(ctx, v.k8sClient, v.gsTenantID)
 	if err != nil {
 		return microerror.Mask(err)
 	}
 
+	if len(azureClientSets) < 1 {
+		v.logger.LogCtx(ctx, "level", "debug", "message", "No clusters, skipping SP expiration collector")
+		return nil
+	}
+
 	failedScrapes := make(map[string]*client.AzureClientSetConfig)
 
-	for azureClientSetConfig := range azureClientSets {
-		c, err := v.getApplicationsClient(azureClientSetConfig)
+	// Use one arbitrary client set (we don't care which one) and use it to list all service principals on the GiantSwarm Active Directory.
+	for azureClientSetConfig, clientSet := range azureClientSets {
+		apps, err := clientSet.ApplicationsClient.ListComplete(ctx, "")
 		if err != nil {
 			// Ignore but log
-			v.logger.LogCtx(ctx, "level", "warning", "message", "Unable to create an applications client: ", err.Error())
-			failedScrapes[azureClientSetConfig.ClientID] = azureClientSetConfig
-			continue
-		}
-
-		apps, err := c.ListComplete(ctx, fmt.Sprintf("appId eq '%s'", azureClientSetConfig.ClientID))
-		if err != nil {
-			// Ignore but log
-			v.logger.LogCtx(ctx, "level", "warning", "message", "Unable to get application: ", err.Error())
+			v.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unable to list applications using client %#q", azureClientSetConfig.ClientID), "stack", microerror.JSON(err), "gsTenantID", v.gsTenantID)
 			failedScrapes[azureClientSetConfig.ClientID] = azureClientSetConfig
 			continue
 		}
@@ -128,6 +128,9 @@ func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 				return microerror.Mask(err)
 			}
 		}
+
+		// We just need to list service principals once, so we can leave the loop.
+		break
 	}
 
 	// Send metrics for failed scrapes as well
@@ -149,57 +152,4 @@ func (v *SPExpiration) Describe(ch chan<- *prometheus.Desc) error {
 	ch <- spExpirationDesc
 	ch <- spExpirationFailedScrapeDesc
 	return nil
-}
-
-func (v *SPExpiration) getApplicationsClient(azureClientSetConfig *client.AzureClientSetConfig) (*graphrbac.ApplicationsClient, error) {
-	c := graphrbac.NewApplicationsClient(azureClientSetConfig.TenantID)
-	a, err := v.getGraphAuthorizer(azureClientSetConfig)
-	if err != nil {
-		return nil, microerror.Mask(err)
-	}
-
-	c.Authorizer = a
-
-	return &c, nil
-}
-
-func (v *SPExpiration) getAuthorizerForResource(azureClientSetConfig *client.AzureClientSetConfig, resource string) (autorest.Authorizer, error) {
-	var a autorest.Authorizer
-	var err error
-
-	env, err := azure.EnvironmentFromName(azureClientSetConfig.EnvironmentName)
-	if err != nil {
-		return a, microerror.Mask(err)
-	}
-
-	oauthConfig, err := adal.NewOAuthConfig(env.ActiveDirectoryEndpoint, azureClientSetConfig.TenantID)
-	if err != nil {
-		return nil, err
-	}
-
-	token, err := adal.NewServicePrincipalToken(*oauthConfig, azureClientSetConfig.ClientID, azureClientSetConfig.ClientSecret, resource)
-	if err != nil {
-		return nil, microerror.Mask(err)
-	}
-
-	a = autorest.NewBearerAuthorizer(token)
-
-	return a, err
-}
-
-func (v *SPExpiration) getGraphAuthorizer(azureClientSetConfig *client.AzureClientSetConfig) (autorest.Authorizer, error) {
-	var a autorest.Authorizer
-	var err error
-
-	env, err := azure.EnvironmentFromName(azureClientSetConfig.EnvironmentName)
-	if err != nil {
-		return a, microerror.Mask(err)
-	}
-
-	a, err = v.getAuthorizerForResource(azureClientSetConfig, env.GraphEndpoint)
-	if err != nil {
-		return nil, microerror.Mask(err)
-	}
-
-	return a, err
 }

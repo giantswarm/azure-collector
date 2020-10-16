@@ -58,17 +58,19 @@ var (
 )
 
 type RateLimitConfig struct {
-	G8sClient versioned.Interface
-	K8sClient kubernetes.Interface
-	Logger    micrologger.Logger
-	Location  string
+	G8sClient  versioned.Interface
+	K8sClient  kubernetes.Interface
+	Logger     micrologger.Logger
+	Location   string
+	GSTenantID string
 }
 
 type RateLimit struct {
-	g8sClient versioned.Interface
-	k8sClient kubernetes.Interface
-	logger    micrologger.Logger
-	location  string
+	g8sClient  versioned.Interface
+	k8sClient  kubernetes.Interface
+	logger     micrologger.Logger
+	location   string
+	gsTenantID string
 }
 
 func init() {
@@ -92,12 +94,16 @@ func NewRateLimit(config RateLimitConfig) (*RateLimit, error) {
 	if config.Location == "" {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
 	}
+	if config.GSTenantID == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.GSTenantID must not be empty", config)
+	}
 
 	u := &RateLimit{
-		g8sClient: config.G8sClient,
-		k8sClient: config.K8sClient,
-		logger:    config.Logger,
-		location:  config.Location,
+		g8sClient:  config.G8sClient,
+		k8sClient:  config.K8sClient,
+		logger:     config.Logger,
+		location:   config.Location,
+		gsTenantID: config.GSTenantID,
 	}
 
 	return u, nil
@@ -106,7 +112,7 @@ func NewRateLimit(config RateLimitConfig) (*RateLimit, error) {
 func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
-	clientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(ctx, u.k8sClient)
+	clientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(ctx, u.k8sClient, u.gsTenantID)
 	if err != nil {
 		return microerror.Mask(err)
 	}
@@ -117,7 +123,7 @@ func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
 	// ClientID.
 	// That way we prevent duplicated metrics.
 	for clientConfig, clientSet := range clientSets {
-		// We want to check only once per subscriptino
+		// We want to check only once per subscription
 		if inArray(doneSubscriptions, clientSet.GroupsClient.SubscriptionID) {
 			continue
 		}
@@ -134,6 +140,7 @@ func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
 			}
 			resourceGroup, err := clientSet.GroupsClient.CreateOrUpdate(ctx, u.getResourceGroupName(), resourceGroup)
 			if err != nil {
+				u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("clientid %#q gstenantid %#q tenantid %#q", clientConfig.ClientID, clientConfig.GSTenantID, clientConfig.TenantID))
 				return microerror.Mask(err)
 			}
 

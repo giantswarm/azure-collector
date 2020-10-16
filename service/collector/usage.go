@@ -43,7 +43,8 @@ type UsageConfig struct {
 	K8sClient kubernetes.Interface
 	Logger    micrologger.Logger
 
-	Location string
+	Location   string
+	GSTenantID string
 }
 
 type Usage struct {
@@ -53,7 +54,8 @@ type Usage struct {
 
 	usageScrapeError prometheus.Counter
 
-	location string
+	location   string
+	gsTenantID string
 }
 
 func init() {
@@ -76,6 +78,9 @@ func NewUsage(config UsageConfig) (*Usage, error) {
 	if config.Location == "" {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
 	}
+	if config.GSTenantID == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.GSTenantID must not be empty", config)
+	}
 
 	u := &Usage{
 		g8sClient:        config.G8sClient,
@@ -83,6 +88,7 @@ func NewUsage(config UsageConfig) (*Usage, error) {
 		logger:           config.Logger,
 		usageScrapeError: scrapeErrorCounter,
 		location:         config.Location,
+		gsTenantID:       config.GSTenantID,
 	}
 
 	return u, nil
@@ -90,7 +96,7 @@ func NewUsage(config UsageConfig) (*Usage, error) {
 
 func (u *Usage) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
-	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(ctx, u.k8sClient)
+	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(ctx, u.k8sClient, u.gsTenantID)
 	if err != nil {
 		return microerror.Mask(err)
 	}

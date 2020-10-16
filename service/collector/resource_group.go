@@ -40,13 +40,15 @@ var (
 )
 
 type ResourceGroupConfig struct {
-	K8sClient kubernetes.Interface
-	Logger    micrologger.Logger
+	K8sClient  kubernetes.Interface
+	Logger     micrologger.Logger
+	GSTenantID string
 }
 
 type ResourceGroup struct {
-	k8sClient kubernetes.Interface
-	logger    micrologger.Logger
+	k8sClient  kubernetes.Interface
+	logger     micrologger.Logger
+	gsTenantID string
 }
 
 // NewResourceGroup exposes metrics on the existing resource groups for every subscription.
@@ -58,10 +60,14 @@ func NewResourceGroup(config ResourceGroupConfig) (*ResourceGroup, error) {
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
+	if config.GSTenantID == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.GSTenantID must not be empty", config)
+	}
 
 	r := &ResourceGroup{
-		k8sClient: config.K8sClient,
-		logger:    config.Logger,
+		k8sClient:  config.K8sClient,
+		logger:     config.Logger,
+		gsTenantID: config.GSTenantID,
 	}
 
 	return r, nil
@@ -69,7 +75,7 @@ func NewResourceGroup(config ResourceGroupConfig) (*ResourceGroup, error) {
 
 func (r *ResourceGroup) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
-	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(ctx, r.k8sClient)
+	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(ctx, r.k8sClient, r.gsTenantID)
 	if err != nil {
 		return microerror.Mask(err)
 	}

@@ -34,15 +34,17 @@ var (
 )
 
 type DeploymentConfig struct {
-	G8sClient versioned.Interface
-	K8sClient kubernetes.Interface
-	Logger    micrologger.Logger
+	G8sClient  versioned.Interface
+	K8sClient  kubernetes.Interface
+	Logger     micrologger.Logger
+	GSTenantID string
 }
 
 type Deployment struct {
-	g8sClient versioned.Interface
-	k8sClient kubernetes.Interface
-	logger    micrologger.Logger
+	g8sClient  versioned.Interface
+	k8sClient  kubernetes.Interface
+	logger     micrologger.Logger
+	gsTenantID string
 }
 
 // NewDeployment exposes metrics about the Azure ARM Deployments for every cluster on this installation.
@@ -57,11 +59,15 @@ func NewDeployment(config DeploymentConfig) (*Deployment, error) {
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
+	if config.GSTenantID == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.GSTenantID must not be empty", config)
+	}
 
 	d := &Deployment{
-		g8sClient: config.G8sClient,
-		k8sClient: config.K8sClient,
-		logger:    config.Logger,
+		g8sClient:  config.G8sClient,
+		k8sClient:  config.K8sClient,
+		logger:     config.Logger,
+		gsTenantID: config.GSTenantID,
 	}
 
 	return d, nil
@@ -69,7 +75,7 @@ func NewDeployment(config DeploymentConfig) (*Deployment, error) {
 
 func (d *Deployment) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
-	azureClientSets, err := credential.GetAzureClientSetsByCluster(ctx, d.k8sClient, d.g8sClient)
+	azureClientSets, err := credential.GetAzureClientSetsByCluster(ctx, d.k8sClient, d.g8sClient, d.gsTenantID)
 	if err != nil {
 		return microerror.Mask(err)
 	}
