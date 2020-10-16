@@ -3,7 +3,6 @@ package collector
 import (
 	"context"
 
-	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-11-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
 	"github.com/giantswarm/microerror"
@@ -12,7 +11,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/giantswarm/azure-collector/v2/client"
 	"github.com/giantswarm/azure-collector/v2/service/credential"
 )
 
@@ -129,17 +127,4 @@ func (v *VPNConnection) Collect(ch chan<- prometheus.Metric) error {
 func (v *VPNConnection) Describe(ch chan<- *prometheus.Desc) error {
 	ch <- vpnConnectionDesc
 	return nil
-}
-
-func (v *VPNConnection) getVPNConnectionsClient(ctx context.Context) (*network.VirtualNetworkGatewayConnectionsClient, error) {
-	config, err := credential.GetAzureConfigFromSecretName(ctx, v.k8sClient, credential.CredentialDefault, credential.CredentialNamespace, v.gsTenantID)
-	if err != nil {
-		return nil, microerror.Mask(err)
-	}
-	azureClients, err := client.NewAzureClientSet(*config)
-	if err != nil {
-		return nil, microerror.Mask(err)
-	}
-
-	return azureClients.VirtualNetworkGatewayConnectionsClient, nil
 }
