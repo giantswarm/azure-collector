@@ -98,36 +98,39 @@ func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 
 	failedScrapes := make(map[string]*client.AzureClientSetConfig)
 
+	// Use one arbitrary client set (we don't care which one) and use it to list all service principals on the GiantSwarm Active Directory.
 	for azureClientSetConfig, clientSet := range azureClientSets {
-		spObjectId, err := clientSet.ApplicationsClient.GetServicePrincipalsIDByAppID(ctx, azureClientSetConfig.ClientID)
+		apps, err := clientSet.ApplicationsClient.ListComplete(ctx, "")
 		if err != nil {
 			// Ignore but log
-			v.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unable to get client application ID for client %#q", azureClientSetConfig.ClientID), "stack", microerror.JSON(err), "gsTenantID", v.gsTenantID)
+			v.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unable to list applications using client %#q", azureClientSetConfig.ClientID), "stack", microerror.JSON(err), "gsTenantID", v.gsTenantID)
 			failedScrapes[azureClientSetConfig.ClientID] = azureClientSetConfig
 			continue
 		}
 
-		app, err := clientSet.ApplicationsClient.Get(ctx, *spObjectId.Value)
-		if err != nil {
-			// Ignore but log
-			v.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unable to fetch details for service principal %#q, client id %#q", *spObjectId.Value, azureClientSetConfig.ClientID), "stack", microerror.JSON(err), "gsTenantID", v.gsTenantID)
-			failedScrapes[azureClientSetConfig.ClientID] = azureClientSetConfig
-			continue
+		for apps.NotDone() {
+			app := apps.Value()
+			for _, pc := range *app.PasswordCredentials {
+				ch <- prometheus.MustNewConstMetric(
+					spExpirationDesc,
+					prometheus.GaugeValue,
+					float64(pc.EndDate.Unix()),
+					azureClientSetConfig.ClientID,
+					azureClientSetConfig.SubscriptionID,
+					azureClientSetConfig.TenantID,
+					*app.AppID,
+					*app.DisplayName,
+					*pc.KeyID,
+				)
+			}
+
+			if err := apps.NextWithContext(ctx); err != nil {
+				return microerror.Mask(err)
+			}
 		}
 
-		for _, pc := range *app.PasswordCredentials {
-			ch <- prometheus.MustNewConstMetric(
-				spExpirationDesc,
-				prometheus.GaugeValue,
-				float64(pc.EndDate.Unix()),
-				azureClientSetConfig.ClientID,
-				azureClientSetConfig.SubscriptionID,
-				azureClientSetConfig.TenantID,
-				*app.AppID,
-				*app.DisplayName,
-				*pc.KeyID,
-			)
-		}
+		// We just need to list service principals once, so we can leave the loop.
+		break
 	}
 
 	// Send metrics for failed scrapes as well
