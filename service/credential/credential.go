@@ -64,8 +64,8 @@ func GetAzureConfigFromSecret(credential *v1.Secret, gsTenantID string) (*client
 
 	// By default we assume that the tenant cluster resources will belong to a subscription that belongs to a different Tenant ID than the one used for authentication.
 	// Typically this means we are using a Service Principal from the GiantSwarm Tenant ID.
-	credentials := auth.NewClientCredentialsConfig(clientID, clientSecret, gsTenantID)
-	credentials.AuxTenants = append(credentials.AuxTenants, tenantID)
+	credentials := auth.NewClientCredentialsConfig(clientID, clientSecret, tenantID)
+	credentials.AuxTenants = append(credentials.AuxTenants, gsTenantID)
 	if _, exists := credential.GetLabels()[SingleTenantSP]; exists || tenantID == gsTenantID {
 		// In this case the tenant cluster resources will belong to a subscription that belongs to the same Tenant ID used for authentication.
 		// Typically this means we are using a Service Principal from the customer Tenant ID.
