@@ -110,7 +110,7 @@ func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 		app, err := clientSet.ApplicationsClient.Get(ctx, *spObjectId.Value)
 		if err != nil {
 			// Ignore but log
-			v.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unable to fetch details for service principal %#q", *spObjectId.Value), "stack", microerror.JSON(err), "gsTenantID", v.gsTenantID)
+			v.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unable to fetch details for service principal %#q, client id %#q", *spObjectId.Value, azureClientSetConfig.ClientID), "stack", microerror.JSON(err), "gsTenantID", v.gsTenantID)
 			failedScrapes[azureClientSetConfig.ClientID] = azureClientSetConfig
 			continue
 		}
