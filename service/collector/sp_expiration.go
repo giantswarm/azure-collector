@@ -99,37 +99,35 @@ func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 	failedScrapes := make(map[string]*client.AzureClientSetConfig)
 
 	for azureClientSetConfig, clientSet := range azureClientSets {
-		apps, err := clientSet.ApplicationsClient.ListComplete(ctx, "")
+		spObjectId, err := clientSet.ApplicationsClient.GetServicePrincipalsIDByAppID(ctx, azureClientSetConfig.ClientID)
 		if err != nil {
 			// Ignore but log
-			v.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unable to list applications using client %#q", azureClientSetConfig.ClientID), "stack", microerror.JSON(err), "gsTenantID", v.gsTenantID)
+			v.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unable to get client application ID for client %#q", azureClientSetConfig.ClientID), "stack", microerror.JSON(err), "gsTenantID", v.gsTenantID)
 			failedScrapes[azureClientSetConfig.ClientID] = azureClientSetConfig
 			continue
 		}
 
-		for apps.NotDone() {
-			app := apps.Value()
-			for _, pc := range *app.PasswordCredentials {
-				ch <- prometheus.MustNewConstMetric(
-					spExpirationDesc,
-					prometheus.GaugeValue,
-					float64(pc.EndDate.Unix()),
-					azureClientSetConfig.ClientID,
-					azureClientSetConfig.SubscriptionID,
-					azureClientSetConfig.TenantID,
-					*app.AppID,
-					*app.DisplayName,
-					*pc.KeyID,
-				)
-			}
-
-			if err := apps.NextWithContext(ctx); err != nil {
-				return microerror.Mask(err)
-			}
+		app, err := clientSet.ApplicationsClient.Get(ctx, *spObjectId.Value)
+		if err != nil {
+			// Ignore but log
+			v.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unable to fetch details for service principal %#q", *spObjectId.Value), "stack", microerror.JSON(err), "gsTenantID", v.gsTenantID)
+			failedScrapes[azureClientSetConfig.ClientID] = azureClientSetConfig
+			continue
 		}
 
-		// We just need to list service principals once, so we can leave the loop.
-		break
+		for _, pc := range *app.PasswordCredentials {
+			ch <- prometheus.MustNewConstMetric(
+				spExpirationDesc,
+				prometheus.GaugeValue,
+				float64(pc.EndDate.Unix()),
+				azureClientSetConfig.ClientID,
+				azureClientSetConfig.SubscriptionID,
+				azureClientSetConfig.TenantID,
+				*app.AppID,
+				*app.DisplayName,
+				*pc.KeyID,
+			)
+		}
 	}
 
 	// Send metrics for failed scrapes as well
