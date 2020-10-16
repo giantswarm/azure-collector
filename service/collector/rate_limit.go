@@ -123,7 +123,7 @@ func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
 	// ClientID.
 	// That way we prevent duplicated metrics.
 	for clientConfig, clientSet := range clientSets {
-		// We want to check only once per subscriptino
+		// We want to check only once per subscription
 		if inArray(doneSubscriptions, clientSet.GroupsClient.SubscriptionID) {
 			continue
 		}
@@ -140,6 +140,7 @@ func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
 			}
 			resourceGroup, err := clientSet.GroupsClient.CreateOrUpdate(ctx, u.getResourceGroupName(), resourceGroup)
 			if err != nil {
+				u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("clientid %#q gstenantid %#q tenantid %#q", clientConfig.ClientID, clientConfig.GSTenantID, clientConfig.TenantID))
 				return microerror.Mask(err)
 			}
 
