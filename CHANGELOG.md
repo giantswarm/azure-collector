@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Use same metric namespace/prefix for all exported metrics. This changed the VMSS Rate limit metrics.
+
 ## [2.0.1] - 2020-10-12
 
 ### Fixed
