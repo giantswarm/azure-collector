@@ -24,13 +24,12 @@ import (
 
 const (
 	vmssVMListHeaderName = "X-Ms-Ratelimit-Remaining-Resource"
-	vmssMetricsNamespace = "azure_collector"
 	vmssMetricsSubsystem = "rate_limit"
 )
 
 var (
 	vmssVMListDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(vmssMetricsNamespace, vmssMetricsSubsystem, "vmss_instance_list"),
+		prometheus.BuildFQName(MetricsNamespace, vmssMetricsSubsystem, "vmss_instance_list"),
 		"Remaining number of VMSS VM list operations.",
 		[]string{
 			"subscription",
@@ -40,7 +39,7 @@ var (
 		nil,
 	)
 	vmssMeasuredCallsDesc = prometheus.NewDesc(
-		prometheus.BuildFQName(vmssMetricsNamespace, vmssMetricsSubsystem, "vmss_measured"),
+		prometheus.BuildFQName(MetricsNamespace, vmssMetricsSubsystem, "vmss_measured"),
 		"Number of calls we are making as returned by the Azure APIs during errorbody 429 incident.",
 		[]string{
 			"subscription",
@@ -50,7 +49,7 @@ var (
 		nil,
 	)
 	vmssVMListErrorCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace: vmssMetricsNamespace,
+		Namespace: MetricsNamespace,
 		Subsystem: vmssMetricsSubsystem,
 		Name:      "vmss_instance_list_parsing_errors",
 		Help:      "Errors trying to parse the remaining requests from the response header",
