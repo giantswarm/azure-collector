@@ -101,6 +101,7 @@ func NewVMSSRateLimit(config VMSSRateLimitConfig) (*VMSSRateLimit, error) {
 
 func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
+	u.logger.LogCtx(ctx, "level", "warning", "message", "Collecting VMSS rate limit")
 
 	// Remove 429 from the retriable error codes.
 	original := autorest.StatusCodesForRetry
@@ -172,6 +173,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 					data := tryParseRequestCountFromResponse(detailed)
 					for k, v := range data {
+						u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Collecting %f number of calls for %#q in subscription %#q using clientid %#q", v, k, config.SubscriptionID, config.ClientID))
 						ch <- prometheus.MustNewConstMetric(
 							vmssMeasuredCallsDesc,
 							prometheus.GaugeValue,
@@ -189,6 +191,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 				// Header not found, we consider this an error.
 				if len(headers) == 0 {
+					u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("We didn't find the header %#q in the response. Incrementing the errors counter", vmssVMListHeaderName))
 					vmssVMListErrorCounter.Inc()
 					continue
 				}
@@ -212,6 +215,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 							continue
 						}
 
+						u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Collecting %f remaining calls for %#q in subscription %#q using clientid %#q", val, kv[0], config.SubscriptionID, config.ClientID))
 						ch <- prometheus.MustNewConstMetric(
 							vmssVMListDesc,
 							prometheus.GaugeValue,
