@@ -188,6 +188,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 				// Header not found, we consider this an error.
 				if len(headers) == 0 {
+					u.logger.LogCtx(ctx, "level", "warning", "message", "Rate limit header not found in the Azure API response")
 					vmssVMListErrorCounter.Inc()
 					continue
 				}
@@ -200,6 +201,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 						kv := strings.SplitN(t, ";", 2)
 						if len(kv) != 2 {
 							// We expect exactly two tokens, otherwise we consider this a parsing error.
+							u.logger.LogCtx(ctx, "level", "warning", "message", "Rate limit header value doesn't have the expected format")
 							vmssVMListErrorCounter.Inc()
 							continue
 						}
@@ -207,6 +209,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 						// The second token must be a number or we don't know what we got from MS.
 						val, err := strconv.ParseFloat(kv[1], 64)
 						if err != nil {
+							u.logger.LogCtx(ctx, "level", "warning", "message", "Rate limit header value should be a number")
 							vmssVMListErrorCounter.Inc()
 							continue
 						}
