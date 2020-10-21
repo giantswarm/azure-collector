@@ -39,6 +39,7 @@ type AzureClientSet struct {
 	UsageClient *compute.UsageClient
 	// VirtualNetworkGatewayConnectionsClient manages virtual network gateway connections.
 	VirtualNetworkGatewayConnectionsClient *network.VirtualNetworkGatewayConnectionsClient
+	VirtualMachineScaleSetsClient          *compute.VirtualMachineScaleSetsClient
 	// VirtualMachineScaleSetVMsClient manages virtual machine scale set VMs.
 	VirtualMachineScaleSetVMsClient *compute.VirtualMachineScaleSetVMsClient
 }
@@ -91,6 +92,10 @@ func NewAzureClientSet(config AzureClientSetConfig) (*AzureClientSet, error) {
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
+	virtualMachineScaleSetsClient, err := newVirtualMachineScaleSetsClient(config.Authorizer, config.SubscriptionID, config.PartnerID)
+	if err != nil {
+		return nil, microerror.Mask(err)
+	}
 	virtualMachineScaleSetVMsClient, err := newVirtualMachineScaleSetVMsClient(config.Authorizer, config.SubscriptionID, config.PartnerID)
 	if err != nil {
 		return nil, microerror.Mask(err)
@@ -102,6 +107,7 @@ func NewAzureClientSet(config AzureClientSetConfig) (*AzureClientSet, error) {
 		GroupsClient:                           groupsClient,
 		UsageClient:                            usageClient,
 		VirtualNetworkGatewayConnectionsClient: virtualNetworkGatewayConnectionsClient,
+		VirtualMachineScaleSetsClient:          virtualMachineScaleSetsClient,
 		VirtualMachineScaleSetVMsClient:        virtualMachineScaleSetVMsClient,
 	}
 
@@ -149,6 +155,14 @@ func newVirtualMachineScaleSetVMsClient(authorizer autorest.Authorizer, subscrip
 
 	return &client, nil
 }
+
+func newVirtualMachineScaleSetsClient(authorizer autorest.Authorizer, subscriptionID, partnerID string) (*compute.VirtualMachineScaleSetsClient, error) {
+	client := compute.NewVirtualMachineScaleSetsClient(subscriptionID)
+	prepareClient(&client.Client, authorizer, partnerID)
+
+	return &client, nil
+}
+
 func newApplicationsClient(clientID, clientSecret, gsTenantID, partnerID string) (*graphrbac.ApplicationsClient, error) {
 	credentials := auth.ClientCredentialsConfig{
 		ClientID:     clientID,
