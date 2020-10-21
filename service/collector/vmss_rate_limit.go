@@ -101,6 +101,8 @@ func NewVMSSRateLimit(config VMSSRateLimitConfig) (*VMSSRateLimit, error) {
 func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
+	u.logger.LogCtx(ctx, "level", "warning", "message", "Collecting VMSS Rate limit")
+
 	// Remove 429 from the retriable error codes.
 	original := autorest.StatusCodesForRetry
 	defer func() {
@@ -135,9 +137,12 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 		}
 	}
 
+	u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Fetched %d CRs", len(crs)))
+
 	{
 		var doneSubscriptions []string
 		for _, cr := range crs {
+			u.logger.LogCtx(ctx, "level", "warning", "message", "Going through CRs to calculate VMSS Rate limit")
 			config, err := credential.GetAzureConfigFromSecretName(ctx, u.k8sClient, key.CredentialName(cr), key.CredentialNamespace(cr), u.gsTenantID)
 			if err != nil {
 				return microerror.Mask(err)
@@ -157,6 +162,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 			{
 				var headers []string
 
+				u.logger.LogCtx(ctx, "level", "warning", "message", "Listing VMs in CR resource group")
 				// Calling the VMSS list machines API to get the metrics.
 				result, err := azureClients.VirtualMachineScaleSetVMsClient.ListComplete(ctx, cr.Name, fmt.Sprintf("%s-master-%s", cr.Name, cr.Name), "", "", "")
 				if err != nil {
@@ -214,6 +220,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 							continue
 						}
 
+						u.logger.LogCtx(ctx, "level", "warning", "message", "Sending VMSS Rate limit metric to Prometheus")
 						ch <- prometheus.MustNewConstMetric(
 							vmssVMListDesc,
 							prometheus.GaugeValue,
