@@ -120,59 +120,9 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 	}
 	autorest.StatusCodesForRetry = codes
 
-	clustersSecret := make(map[string]*v1.Secret)
-	azureConfigs := &providerv1alpha1.AzureConfigList{}
-	{
-		err := u.ctrlClient.List(ctx, azureConfigs, ctrlclient.InNamespace(metav1.NamespaceAll))
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-	for _, azureConfig := range azureConfigs.Items {
-		secret := &v1.Secret{}
-		err := u.ctrlClient.Get(ctx, ctrlclient.ObjectKey{Namespace: key.CredentialNamespace(azureConfig), Name: key.CredentialName(azureConfig)}, secret)
-		if err != nil {
-			return microerror.Mask(err)
-		}
-		clustersSecret[azureConfig.Name] = secret
-	}
-
-	clusters := &v1alpha3.ClusterList{}
-	{
-		err := u.ctrlClient.List(ctx, clusters, ctrlclient.InNamespace(metav1.NamespaceAll))
-		if err != nil {
-			return microerror.Mask(err)
-		}
-	}
-	for _, cluster := range clusters.Items {
-		organization, ok := cluster.Labels[label.Organization]
-		if !ok {
-			return microerror.Mask(missingOrganizationLabel)
-		}
-		secretList := &v1.SecretList{}
-		{
-			err := u.ctrlClient.List(
-				ctx,
-				secretList,
-				ctrlclient.InNamespace(cluster.Namespace),
-				ctrlclient.MatchingLabels{
-					"app":              "credentiald",
-					label.Organization: organization,
-				},
-			)
-			if err != nil {
-				return microerror.Mask(err)
-			}
-		}
-		if len(secretList.Items) > 1 {
-			return microerror.Mask(tooManyCredentialsError)
-		}
-
-		if len(secretList.Items) < 1 {
-			return microerror.Mask(credentialsNotFoundError)
-		}
-
-		clustersSecret[cluster.Name] = &secretList.Items[0]
+	clustersSecret, err := u.getClusters(ctx)
+	if err != nil {
+		return microerror.Mask(err)
 	}
 
 	var doneSubscriptions []string
@@ -247,6 +197,69 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 	}
 
 	return nil
+}
+
+func (u *VMSSRateLimit) getClusters(ctx context.Context) (map[string]*v1.Secret, error) {
+	clustersSecret := make(map[string]*v1.Secret)
+	azureConfigs := &providerv1alpha1.AzureConfigList{}
+	{
+		err := u.ctrlClient.List(ctx, azureConfigs, ctrlclient.InNamespace(metav1.NamespaceAll))
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+	}
+	for _, azureConfig := range azureConfigs.Items {
+		secret := &v1.Secret{}
+		err := u.ctrlClient.Get(ctx, ctrlclient.ObjectKey{Namespace: key.CredentialNamespace(azureConfig), Name: key.CredentialName(azureConfig)}, secret)
+		if err != nil {
+			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping AzureConfig %#q", azureConfig.Name), "stack", microerror.JSON(err))
+			continue
+		}
+		clustersSecret[azureConfig.Name] = secret
+	}
+
+	clusters := &v1alpha3.ClusterList{}
+	{
+		err := u.ctrlClient.List(ctx, clusters, ctrlclient.InNamespace(metav1.NamespaceAll))
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+	}
+	for _, cluster := range clusters.Items {
+		organization, ok := cluster.Labels[label.Organization]
+		if !ok {
+			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(missingOrganizationLabel))
+			continue
+		}
+		secretList := &v1.SecretList{}
+		{
+			err := u.ctrlClient.List(
+				ctx,
+				secretList,
+				ctrlclient.InNamespace(cluster.Namespace),
+				ctrlclient.MatchingLabels{
+					"app":              "credentiald",
+					label.Organization: organization,
+				},
+			)
+			if err != nil {
+				u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(err))
+				continue
+			}
+		}
+		if len(secretList.Items) > 1 {
+			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(tooManyCredentialsError))
+			continue
+		}
+
+		if len(secretList.Items) < 1 {
+			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(credentialsNotFoundError))
+			continue
+		}
+
+		clustersSecret[cluster.Name] = &secretList.Items[0]
+	}
+	return clustersSecret, nil
 }
 
 // collectMeasuredCallsFromResponse When being throttled, the response will contain information with the number of calls being made.
