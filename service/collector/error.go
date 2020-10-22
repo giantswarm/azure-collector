@@ -35,3 +35,30 @@ func IsThrottlingError(err error) bool {
 
 	return false
 }
+
+var tooManyCredentialsError = &microerror.Error{
+	Kind: "tooManyCredentialsError",
+}
+
+// IsTooManyCredentialsError asserts tooManyCredentialsError.
+func IsTooManyCredentialsError(err error) bool {
+	return microerror.Cause(err) == tooManyCredentialsError
+}
+
+var credentialsNotFoundError = &microerror.Error{
+	Kind: "credentialsNotFoundError",
+}
+
+// IsCredentialsNotFoundError asserts credentialsNotFoundError.
+func IsCredentialsNotFoundError(err error) bool {
+	return microerror.Cause(err) == credentialsNotFoundError
+}
+
+var missingOrganizationLabel = &microerror.Error{
+	Kind: "missingOrganizationLabel",
+}
+
+// IsMissingOrganizationLabel asserts missingOrganizationLabel.
+func IsMissingOrganizationLabel(err error) bool {
+	return microerror.Cause(err) == missingOrganizationLabel
+}

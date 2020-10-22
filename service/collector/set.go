@@ -107,8 +107,7 @@ func NewSet(config SetConfig) (*Set, error) {
 	var vmssRateLimitCollector *VMSSRateLimit
 	{
 		c := VMSSRateLimitConfig{
-			G8sClient:  config.K8sClient.G8sClient(),
-			K8sClient:  config.K8sClient.K8sClient(),
+			CtrlClient: config.K8sClient.CtrlClient(),
 			Logger:     config.Logger,
 			GSTenantID: config.GSTenantID,
 		}

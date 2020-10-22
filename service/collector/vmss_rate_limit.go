@@ -11,12 +11,14 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
-	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
+	"github.com/giantswarm/apiextensions/v2/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/cluster-api/api/v1alpha3"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-collector/v2/client"
 	"github.com/giantswarm/azure-collector/v2/service/collector/key"
@@ -67,15 +69,13 @@ var (
 )
 
 type VMSSRateLimitConfig struct {
-	G8sClient  versioned.Interface
-	K8sClient  kubernetes.Interface
+	CtrlClient ctrlclient.Client
 	Logger     micrologger.Logger
 	GSTenantID string
 }
 
 type VMSSRateLimit struct {
-	g8sClient  versioned.Interface
-	k8sClient  kubernetes.Interface
+	ctrlClient ctrlclient.Client
 	logger     micrologger.Logger
 	gsTenantID string
 }
@@ -85,11 +85,8 @@ func init() {
 }
 
 func NewVMSSRateLimit(config VMSSRateLimitConfig) (*VMSSRateLimit, error) {
-	if config.G8sClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.G8sClient must not be empty", config)
-	}
-	if config.K8sClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.K8sClient must not be empty", config)
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
 	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
@@ -99,8 +96,7 @@ func NewVMSSRateLimit(config VMSSRateLimitConfig) (*VMSSRateLimit, error) {
 	}
 
 	u := &VMSSRateLimit{
-		g8sClient:  config.G8sClient,
-		k8sClient:  config.K8sClient,
+		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,
 		gsTenantID: config.GSTenantID,
 	}
@@ -124,27 +120,64 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 	}
 	autorest.StatusCodesForRetry = codes
 
-	var crs []providerv1alpha1.AzureConfig
-	mark := ""
-	page := 0
-	for page == 0 || len(mark) > 0 {
-		opts := metav1.ListOptions{
-			Continue: mark,
-		}
-		list, err := u.g8sClient.ProviderV1alpha1().AzureConfigs(metav1.NamespaceAll).List(ctx, opts)
+	clustersSecret := make(map[string]*v1.Secret)
+	azureConfigs := &providerv1alpha1.AzureConfigList{}
+	{
+		err := u.ctrlClient.List(ctx, azureConfigs, ctrlclient.InNamespace(metav1.NamespaceAll))
 		if err != nil {
 			return microerror.Mask(err)
 		}
+	}
+	for _, azureConfig := range azureConfigs.Items {
+		secret := &v1.Secret{}
+		err := u.ctrlClient.Get(ctx, ctrlclient.ObjectKey{Namespace: key.CredentialNamespace(azureConfig), Name: key.CredentialName(azureConfig)}, secret)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+		clustersSecret[azureConfig.Name] = secret
+	}
 
-		crs = append(crs, list.Items...)
+	clusters := &v1alpha3.ClusterList{}
+	{
+		err := u.ctrlClient.List(ctx, clusters, ctrlclient.InNamespace(metav1.NamespaceAll))
+		if err != nil {
+			return microerror.Mask(err)
+		}
+	}
+	for _, cluster := range clusters.Items {
+		organization, ok := cluster.Labels[label.Organization]
+		if !ok {
+			return microerror.Mask(missingOrganizationLabel)
+		}
+		secretList := &v1.SecretList{}
+		{
+			err := u.ctrlClient.List(
+				ctx,
+				secretList,
+				ctrlclient.InNamespace(cluster.Namespace),
+				ctrlclient.MatchingLabels{
+					"app":              "credentiald",
+					label.Organization: organization,
+				},
+			)
+			if err != nil {
+				return microerror.Mask(err)
+			}
+		}
+		if len(secretList.Items) > 1 {
+			return microerror.Mask(tooManyCredentialsError)
+		}
 
-		mark = list.Continue
-		page++
+		if len(secretList.Items) < 1 {
+			return microerror.Mask(credentialsNotFoundError)
+		}
+
+		clustersSecret[cluster.Name] = &secretList.Items[0]
 	}
 
 	var doneSubscriptions []string
-	for _, cr := range crs {
-		config, err := credential.GetAzureConfigFromSecretName(ctx, u.k8sClient, key.CredentialName(cr), key.CredentialNamespace(cr), u.gsTenantID)
+	for cluster, secret := range clustersSecret {
+		config, err := credential.GetAzureConfigFromSecret(secret, u.gsTenantID)
 		if err != nil {
 			return microerror.Mask(err)
 		}
@@ -159,11 +192,10 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 			return microerror.Mask(err)
 		}
 
-		result, err := azureClients.VirtualMachineScaleSetVMsClient.ListComplete(ctx, cr.Name, fmt.Sprintf("%s-master-%s", cr.Name, cr.Name), "", "", "")
+		result, err := azureClients.VirtualMachineScaleSetVMsClient.ListComplete(ctx, cluster, fmt.Sprintf("%s-master-%s", cluster, cluster), "", "", "")
 		if IsThrottlingError(err) {
 			u.collectMeasuredCallsFromResponse(ch, result, config.SubscriptionID, config.ClientID)
 		} else if err != nil {
-			u.logger.LogCtx(ctx, "level", "warning", "message", "Error calling azure API")
 			u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", config.ClientID, "subscriptionid", config.SubscriptionID, "tenantid", config.TenantID, "stack", microerror.JSON(err))
 			continue
 		}
