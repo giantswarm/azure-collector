@@ -157,6 +157,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 		// Header not found, we consider this an error.
 		if len(headers) == 0 {
+			u.logger.LogCtx(ctx, "level", "warning", "message", "Header with rate limit information not found. Skipping.", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID)
 			vmssVMListErrorCounter.Inc()
 			continue
 		}
@@ -169,6 +170,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 				kv := strings.SplitN(t, ";", 2)
 				if len(kv) != 2 {
 					// We expect exactly two tokens, otherwise we consider this a parsing error.
+					u.logger.LogCtx(ctx, "level", "warning", "message", "Unexpected number of tokens in header. Skipping.", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID)
 					vmssVMListErrorCounter.Inc()
 					continue
 				}
@@ -176,6 +178,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 				// The second token must be a number or we don't know what we got from MS.
 				val, err := strconv.ParseFloat(kv[1], 64)
 				if err != nil {
+					u.logger.LogCtx(ctx, "level", "warning", "message", "Unexpected value found in token. Skipping.", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID)
 					vmssVMListErrorCounter.Inc()
 					continue
 				}
