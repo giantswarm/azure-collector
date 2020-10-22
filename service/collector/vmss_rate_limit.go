@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
 	"github.com/giantswarm/microerror"
@@ -19,6 +20,15 @@ import (
 )
 
 const (
+	// Note that an API request can be subjected to multiple throttling policies.
+	// There will be a separate x-ms-ratelimit-remaining-resource header for each policy.
+	//
+	// Here is a sample response to delete virtual machine scale set request.
+	//
+	// x-ms-ratelimit-remaining-resource: Microsoft.Compute/DeleteVMScaleSet3Min;107
+	// x-ms-ratelimit-remaining-resource: Microsoft.Compute/DeleteVMScaleSet30Min;587
+	// x-ms-ratelimit-remaining-resource: Microsoft.Compute/VMScaleSetBatchedVMRequests5Min;3704
+	// x-ms-ratelimit-remaining-resource: Microsoft.Compute/VmssQueuedVMOperations;4720
 	vmssVMListHeaderName = "X-Ms-Ratelimit-Remaining-Resource"
 	vmssMetricsSubsystem = "rate_limit"
 )
@@ -126,19 +136,11 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 	}
 
 	for azureClientSetConfig, azureClientSet := range azureClients {
-		var headers []string
-
 		result, err := azureClientSet.VirtualMachineScaleSetsClient.ListComplete(ctx, u.getResourceGroupName())
-		if err != nil {
-			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Error calling azure API"), "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID, "tenantid", azureClientSetConfig.TenantID, "stack", microerror.JSON(err))
-			detailed, ok := err.(autorest.DetailedError)
-			if !ok {
-				u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping clientid %#q / subscriptiondid %#q due to error calling Azure API", azureClientSetConfig.ClientID, azureClientSetConfig.SubscriptionID))
-				continue
-			}
-			headers = detailed.Response.Header[vmssVMListHeaderName]
-
-			data := tryParseRequestCountFromResponse(detailed)
+		if IsThrottlingError(err) {
+			// When being throttled, the response will contain information with the number of calls being made.
+			// https://docs.microsoft.com/en-us/azure/virtual-machines/troubleshooting/troubleshooting-throttling-errors#throttling-error-details
+			data := tryParseRequestCountFromResponse(result)
 			for k, v := range data {
 				ch <- prometheus.MustNewConstMetric(
 					vmssMeasuredCallsDesc,
@@ -149,28 +151,31 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 					k,
 				)
 			}
+		} else if err != nil {
+			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Error calling azure API. Skipping"), "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID, "tenantid", azureClientSetConfig.TenantID, "stack", microerror.JSON(err))
+			continue
 		}
 
-		if len(headers) == 0 {
-			headers = result.Response().Response.Header[vmssVMListHeaderName]
-		}
-
-		// Header not found, we consider this an error.
-		if len(headers) == 0 {
+		// Note that an API request can be subjected to multiple throttling policies.
+		// There will be a separate x-ms-ratelimit-remaining-resource header for each policy.
+		headers, ok := result.Response().Header[vmssVMListHeaderName]
+		if !ok {
 			u.logger.LogCtx(ctx, "level", "warning", "message", "Header with rate limit information not found. Skipping.", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID)
 			vmssVMListErrorCounter.Inc()
 			continue
 		}
 
-		for _, l := range headers {
+		// Example header value: "x-ms-ratelimit-remaining-resource: Microsoft.Compute/DeleteVMScaleSet3Min;107"
+		for _, header := range headers {
 			// Limits are a single comma separated string.
-			tokens := strings.SplitN(l, ",", -1)
+			tokens := strings.SplitN(header, ",", -1)
 			for _, t := range tokens {
 				// Each limit's name and value are separated by a semicolon.
 				kv := strings.SplitN(t, ";", 2)
 				if len(kv) != 2 {
 					// We expect exactly two tokens, otherwise we consider this a parsing error.
-					u.logger.LogCtx(ctx, "level", "warning", "message", "Unexpected number of tokens in header. Skipping.", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID)
+					u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unexpected limit in header. Expected something like 'Microsoft.Compute/DeleteVMScaleSet3Min;107', got %#q", t))
+					u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID)
 					vmssVMListErrorCounter.Inc()
 					continue
 				}
@@ -178,7 +183,8 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 				// The second token must be a number or we don't know what we got from MS.
 				val, err := strconv.ParseFloat(kv[1], 64)
 				if err != nil {
-					u.logger.LogCtx(ctx, "level", "warning", "message", "Unexpected value found in token. Skipping.", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID)
+					u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unexpected value in limit. Expected a number, got %v", kv[1]))
+					u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID)
 					vmssVMListErrorCounter.Inc()
 					continue
 				}
@@ -217,10 +223,10 @@ func inArray(a []string, s string) bool {
 // This function is a best-effort attempt at reading the number of API calls we are making
 // towards the Azure VMSS API during a 429.
 // Useful metric to check if the situation is improving or not.
-func tryParseRequestCountFromResponse(detailed autorest.DetailedError) map[string]float64 {
+func tryParseRequestCountFromResponse(detailed compute.VirtualMachineScaleSetListResultIterator) map[string]float64 {
 	ret := map[string]float64{}
 
-	body := detailed.Response.Body
+	body := detailed.Response().Body
 
 	type detail struct {
 		Message string `json:"message"`
