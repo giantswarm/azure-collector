@@ -130,10 +130,10 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 		result, err := azureClientSet.VirtualMachineScaleSetsClient.ListComplete(ctx, u.getResourceGroupName())
 		if err != nil {
-			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Error calling azure API: %s", err))
+			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Error calling azure API"), "stack", microerror.JSON(err))
 			detailed, ok := err.(autorest.DetailedError)
 			if !ok {
-				u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Error listing VMSS on %s", u.getResourceGroupName()), "stack", microerror.JSON(err))
+				u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping clientid %#q / subscriptiondid %#q due to error calling Azure API", azureClientSetConfig.ClientID, azureClientSetConfig.SubscriptionID))
 				continue
 			}
 			headers = detailed.Response.Header[vmssVMListHeaderName]
