@@ -138,21 +138,10 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 	for azureClientSetConfig, azureClientSet := range azureClients {
 		result, err := azureClientSet.VirtualMachineScaleSetsClient.ListComplete(ctx, u.getResourceGroupName())
 		if IsThrottlingError(err) {
-			// When being throttled, the response will contain information with the number of calls being made.
-			// https://docs.microsoft.com/en-us/azure/virtual-machines/troubleshooting/troubleshooting-throttling-errors#throttling-error-details
-			data := tryParseRequestCountFromResponse(result)
-			for k, v := range data {
-				ch <- prometheus.MustNewConstMetric(
-					vmssMeasuredCallsDesc,
-					prometheus.GaugeValue,
-					v,
-					azureClientSetConfig.SubscriptionID,
-					azureClientSetConfig.ClientID,
-					k,
-				)
-			}
+			u.collectMeasuredCallsFromResponse(ch, result, azureClientSetConfig.SubscriptionID, azureClientSetConfig.ClientID)
 		} else if err != nil {
-			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Error calling azure API. Skipping"), "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID, "tenantid", azureClientSetConfig.TenantID, "stack", microerror.JSON(err))
+			u.logger.LogCtx(ctx, "level", "warning", "message", "Error calling azure API")
+			u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID, "tenantid", azureClientSetConfig.TenantID, "stack", microerror.JSON(err))
 			continue
 		}
 
@@ -160,7 +149,8 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 		// There will be a separate x-ms-ratelimit-remaining-resource header for each policy.
 		headers, ok := result.Response().Header[vmssVMListHeaderName]
 		if !ok {
-			u.logger.LogCtx(ctx, "level", "warning", "message", "Header with rate limit information not found. Skipping.", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID)
+			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Header %#q not found", vmssVMListHeaderName), "headers", result.Response().Header)
+			u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID, "tenantid", azureClientSetConfig.TenantID, "stack", microerror.JSON(err))
 			vmssVMListErrorCounter.Inc()
 			continue
 		}
@@ -202,6 +192,22 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 	}
 
 	return nil
+}
+
+// collectMeasuredCallsFromResponse When being throttled, the response will contain information with the number of calls being made.
+// https://docs.microsoft.com/en-us/azure/virtual-machines/troubleshooting/troubleshooting-throttling-errors#throttling-error-details
+func (u *VMSSRateLimit) collectMeasuredCallsFromResponse(ch chan<- prometheus.Metric, result compute.VirtualMachineScaleSetListResultIterator, subscriptionID, clientID string) {
+	data := tryParseRequestCountFromResponse(result)
+	for k, v := range data {
+		ch <- prometheus.MustNewConstMetric(
+			vmssMeasuredCallsDesc,
+			prometheus.GaugeValue,
+			v,
+			subscriptionID,
+			clientID,
+			k,
+		)
+	}
 }
 
 func (u *VMSSRateLimit) Describe(ch chan<- *prometheus.Desc) error {
