@@ -109,7 +109,6 @@ func NewSet(config SetConfig) (*Set, error) {
 		c := VMSSRateLimitConfig{
 			G8sClient:  config.K8sClient.G8sClient(),
 			K8sClient:  config.K8sClient.K8sClient(),
-			Location:   config.Location,
 			Logger:     config.Logger,
 			GSTenantID: config.GSTenantID,
 		}

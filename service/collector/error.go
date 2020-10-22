@@ -35,23 +35,3 @@ func IsThrottlingError(err error) bool {
 
 	return false
 }
-
-// IsNotFoundError asserts 404 response.
-func IsNotFoundError(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	c := microerror.Cause(err)
-
-	{
-		dErr, ok := c.(autorest.DetailedError)
-		if ok {
-			if dErr.StatusCode == http.StatusNotFound {
-				return true
-			}
-		}
-	}
-
-	return false
-}

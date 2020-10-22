@@ -10,12 +10,16 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest"
+	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
 	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/giantswarm/azure-collector/v2/client"
+	"github.com/giantswarm/azure-collector/v2/service/collector/key"
 	"github.com/giantswarm/azure-collector/v2/service/credential"
 )
 
@@ -65,7 +69,6 @@ var (
 type VMSSRateLimitConfig struct {
 	G8sClient  versioned.Interface
 	K8sClient  kubernetes.Interface
-	Location   string
 	Logger     micrologger.Logger
 	GSTenantID string
 }
@@ -73,7 +76,6 @@ type VMSSRateLimitConfig struct {
 type VMSSRateLimit struct {
 	g8sClient  versioned.Interface
 	k8sClient  kubernetes.Interface
-	location   string
 	logger     micrologger.Logger
 	gsTenantID string
 }
@@ -89,9 +91,6 @@ func NewVMSSRateLimit(config VMSSRateLimitConfig) (*VMSSRateLimit, error) {
 	if config.K8sClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.K8sClient must not be empty", config)
 	}
-	if config.Location == "" {
-		return nil, microerror.Maskf(invalidConfigError, "%T.Location must not be empty", config)
-	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
 	}
@@ -102,16 +101,11 @@ func NewVMSSRateLimit(config VMSSRateLimitConfig) (*VMSSRateLimit, error) {
 	u := &VMSSRateLimit{
 		g8sClient:  config.G8sClient,
 		k8sClient:  config.K8sClient,
-		location:   config.Location,
 		logger:     config.Logger,
 		gsTenantID: config.GSTenantID,
 	}
 
 	return u, nil
-}
-
-func (u *VMSSRateLimit) getResourceGroupName() string {
-	return fmt.Sprintf("%s-%s", resourceGroupNamePrefix, u.location)
 }
 
 func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
@@ -130,20 +124,47 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 	}
 	autorest.StatusCodesForRetry = codes
 
-	azureClients, err := credential.GetAzureClientSetsFromCredentialSecrets(ctx, u.k8sClient, u.gsTenantID)
-	if err != nil {
-		return microerror.Mask(err)
+	var crs []providerv1alpha1.AzureConfig
+	mark := ""
+	page := 0
+	for page == 0 || len(mark) > 0 {
+		opts := metav1.ListOptions{
+			Continue: mark,
+		}
+		list, err := u.g8sClient.ProviderV1alpha1().AzureConfigs(metav1.NamespaceAll).List(ctx, opts)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+
+		crs = append(crs, list.Items...)
+
+		mark = list.Continue
+		page++
 	}
 
-	for azureClientSetConfig, azureClientSet := range azureClients {
-		result, err := azureClientSet.VirtualMachineScaleSetVMsClient.ListComplete(ctx, u.getResourceGroupName(), "notfound", "", "", "")
+	var doneSubscriptions []string
+	for _, cr := range crs {
+		config, err := credential.GetAzureConfigFromSecretName(ctx, u.k8sClient, key.CredentialName(cr), key.CredentialNamespace(cr), u.gsTenantID)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+
+		// We want to check only once per subscription
+		if inArray(doneSubscriptions, config.SubscriptionID) {
+			continue
+		}
+
+		azureClients, err := client.NewAzureClientSet(*config)
+		if err != nil {
+			return microerror.Mask(err)
+		}
+
+		result, err := azureClients.VirtualMachineScaleSetVMsClient.ListComplete(ctx, cr.Name, fmt.Sprintf("%s-master-%s", cr.Name, cr.Name), "", "", "")
 		if IsThrottlingError(err) {
-			u.collectMeasuredCallsFromResponse(ch, result, azureClientSetConfig.SubscriptionID, azureClientSetConfig.ClientID)
-		} else if IsNotFoundError(err) {
-			// It's ok, we know it does not exist.
+			u.collectMeasuredCallsFromResponse(ch, result, config.SubscriptionID, config.ClientID)
 		} else if err != nil {
 			u.logger.LogCtx(ctx, "level", "warning", "message", "Error calling azure API")
-			u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID, "tenantid", azureClientSetConfig.TenantID, "stack", microerror.JSON(err))
+			u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", config.ClientID, "subscriptionid", config.SubscriptionID, "tenantid", config.TenantID, "stack", microerror.JSON(err))
 			continue
 		}
 
@@ -152,7 +173,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 		headers, ok := result.Response().Header[vmssVMListHeaderName]
 		if !ok {
 			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Header %#q not found", vmssVMListHeaderName), "headers", result.Response().Header)
-			u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID, "tenantid", azureClientSetConfig.TenantID, "stack", microerror.JSON(err))
+			u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", config.ClientID, "subscriptionid", config.SubscriptionID, "tenantid", config.TenantID, "stack", microerror.JSON(err))
 			vmssVMListErrorCounter.Inc()
 			continue
 		}
@@ -167,7 +188,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 				if len(kv) != 2 {
 					// We expect exactly two tokens, otherwise we consider this a parsing error.
 					u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unexpected limit in header. Expected something like 'Microsoft.Compute/DeleteVMScaleSet3Min;107', got %#q", t))
-					u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID)
+					u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", config.ClientID, "subscriptionid", config.SubscriptionID)
 					vmssVMListErrorCounter.Inc()
 					continue
 				}
@@ -176,7 +197,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 				val, err := strconv.ParseFloat(kv[1], 64)
 				if err != nil {
 					u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unexpected value in limit. Expected a number, got %v", kv[1]))
-					u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID)
+					u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", config.ClientID, "subscriptionid", config.SubscriptionID)
 					vmssVMListErrorCounter.Inc()
 					continue
 				}
@@ -185,8 +206,8 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 					vmssVMListDesc,
 					prometheus.GaugeValue,
 					val,
-					azureClientSetConfig.SubscriptionID,
-					azureClientSetConfig.ClientID,
+					config.SubscriptionID,
+					config.ClientID,
 					kv[0],
 				)
 			}
