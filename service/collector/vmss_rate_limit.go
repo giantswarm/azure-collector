@@ -136,9 +136,11 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 	}
 
 	for azureClientSetConfig, azureClientSet := range azureClients {
-		result, err := azureClientSet.VirtualMachineScaleSetsClient.ListComplete(ctx, u.getResourceGroupName())
+		result, err := azureClientSet.VirtualMachineScaleSetVMsClient.ListComplete(ctx, u.getResourceGroupName(), "notfound", "", "", "")
 		if IsThrottlingError(err) {
 			u.collectMeasuredCallsFromResponse(ch, result, azureClientSetConfig.SubscriptionID, azureClientSetConfig.ClientID)
+		} else if IsNotFoundError(err) {
+			// It's ok, we know it does not exist.
 		} else if err != nil {
 			u.logger.LogCtx(ctx, "level", "warning", "message", "Error calling azure API")
 			u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", azureClientSetConfig.ClientID, "subscriptionid", azureClientSetConfig.SubscriptionID, "tenantid", azureClientSetConfig.TenantID, "stack", microerror.JSON(err))
@@ -196,8 +198,8 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 // collectMeasuredCallsFromResponse When being throttled, the response will contain information with the number of calls being made.
 // https://docs.microsoft.com/en-us/azure/virtual-machines/troubleshooting/troubleshooting-throttling-errors#throttling-error-details
-func (u *VMSSRateLimit) collectMeasuredCallsFromResponse(ch chan<- prometheus.Metric, result compute.VirtualMachineScaleSetListResultIterator, subscriptionID, clientID string) {
-	data := tryParseRequestCountFromResponse(result)
+func (u *VMSSRateLimit) collectMeasuredCallsFromResponse(ch chan<- prometheus.Metric, result compute.VirtualMachineScaleSetVMListResultIterator, subscriptionID, clientID string) {
+	data := tryParseRequestCountFromResponse(result.Response().Response)
 	for k, v := range data {
 		ch <- prometheus.MustNewConstMetric(
 			vmssMeasuredCallsDesc,
@@ -229,10 +231,8 @@ func inArray(a []string, s string) bool {
 // This function is a best-effort attempt at reading the number of API calls we are making
 // towards the Azure VMSS API during a 429.
 // Useful metric to check if the situation is improving or not.
-func tryParseRequestCountFromResponse(detailed compute.VirtualMachineScaleSetListResultIterator) map[string]float64 {
+func tryParseRequestCountFromResponse(response autorest.Response) map[string]float64 {
 	ret := map[string]float64{}
-
-	body := detailed.Response().Body
 
 	type detail struct {
 		Message string `json:"message"`
@@ -247,7 +247,7 @@ func tryParseRequestCountFromResponse(detailed compute.VirtualMachineScaleSetLis
 	}
 
 	var azz errorbody
-	d := json.NewDecoder(body)
+	d := json.NewDecoder(response.Body)
 
 	err := d.Decode(&azz)
 	if err != nil {
