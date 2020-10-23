@@ -14,6 +14,7 @@ import (
 	"github.com/giantswarm/versionbundle"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/rest"
+	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
 
 	"github.com/giantswarm/azure-collector/v2/flag"
 	"github.com/giantswarm/azure-collector/v2/pkg/project"
@@ -105,6 +106,7 @@ func New(config Config) (*Service, error) {
 			Logger: config.Logger,
 			SchemeBuilder: k8sclient.SchemeBuilder{
 				v1alpha1.AddToScheme,
+				capiv1alpha3.AddToScheme,
 			},
 
 			KubeConfigPath: kubeConfigPath,

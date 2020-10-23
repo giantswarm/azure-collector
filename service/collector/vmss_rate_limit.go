@@ -8,14 +8,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
-	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
+	"github.com/giantswarm/apiextensions/v2/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/cluster-api/api/v1alpha3"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-collector/v2/client"
 	"github.com/giantswarm/azure-collector/v2/service/collector/key"
@@ -23,6 +26,15 @@ import (
 )
 
 const (
+	// Note that an API request can be subjected to multiple throttling policies.
+	// There will be a separate x-ms-ratelimit-remaining-resource header for each policy.
+	//
+	// Here is a sample response to delete virtual machine scale set request.
+	//
+	// x-ms-ratelimit-remaining-resource: Microsoft.Compute/DeleteVMScaleSet3Min;107
+	// x-ms-ratelimit-remaining-resource: Microsoft.Compute/DeleteVMScaleSet30Min;587
+	// x-ms-ratelimit-remaining-resource: Microsoft.Compute/VMScaleSetBatchedVMRequests5Min;3704
+	// x-ms-ratelimit-remaining-resource: Microsoft.Compute/VmssQueuedVMOperations;4720
 	vmssVMListHeaderName = "X-Ms-Ratelimit-Remaining-Resource"
 	vmssMetricsSubsystem = "rate_limit"
 )
@@ -57,15 +69,13 @@ var (
 )
 
 type VMSSRateLimitConfig struct {
-	G8sClient  versioned.Interface
-	K8sClient  kubernetes.Interface
+	CtrlClient ctrlclient.Client
 	Logger     micrologger.Logger
 	GSTenantID string
 }
 
 type VMSSRateLimit struct {
-	g8sClient  versioned.Interface
-	k8sClient  kubernetes.Interface
+	ctrlClient ctrlclient.Client
 	logger     micrologger.Logger
 	gsTenantID string
 }
@@ -75,11 +85,8 @@ func init() {
 }
 
 func NewVMSSRateLimit(config VMSSRateLimitConfig) (*VMSSRateLimit, error) {
-	if config.G8sClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.G8sClient must not be empty", config)
-	}
-	if config.K8sClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.K8sClient must not be empty", config)
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
 	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
@@ -89,8 +96,7 @@ func NewVMSSRateLimit(config VMSSRateLimitConfig) (*VMSSRateLimit, error) {
 	}
 
 	u := &VMSSRateLimit{
-		g8sClient:  config.G8sClient,
-		k8sClient:  config.K8sClient,
+		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,
 		gsTenantID: config.GSTenantID,
 	}
@@ -114,122 +120,162 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 	}
 	autorest.StatusCodesForRetry = codes
 
-	// We need all CRs to gather all subscriptions below.
-	var crs []providerv1alpha1.AzureConfig
-	{
-		mark := ""
-		page := 0
-		for page == 0 || len(mark) > 0 {
-			opts := metav1.ListOptions{
-				Continue: mark,
-			}
-			list, err := u.g8sClient.ProviderV1alpha1().AzureConfigs(metav1.NamespaceAll).List(ctx, opts)
-			if err != nil {
-				return microerror.Mask(err)
-			}
-
-			crs = append(crs, list.Items...)
-
-			mark = list.Continue
-			page++
-		}
+	clustersSecret, err := u.getClusters(ctx)
+	if err != nil {
+		return microerror.Mask(err)
 	}
 
-	{
-		var doneSubscriptions []string
-		for _, cr := range crs {
-			config, err := credential.GetAzureConfigFromSecretName(ctx, u.k8sClient, key.CredentialName(cr), key.CredentialNamespace(cr), u.gsTenantID)
-			if err != nil {
-				return microerror.Mask(err)
-			}
+	var doneSubscriptions []string
+	for cluster, secret := range clustersSecret {
+		config, err := credential.GetAzureConfigFromSecret(secret, u.gsTenantID)
+		if err != nil {
+			return microerror.Mask(err)
+		}
 
-			// We want to check only once per subscriptino
-			if inArray(doneSubscriptions, config.SubscriptionID) {
-				continue
-			}
+		// We want to check only once per subscription
+		if inArray(doneSubscriptions, config.SubscriptionID) {
+			continue
+		}
 
-			azureClients, err := client.NewAzureClientSet(*config)
-			if err != nil {
-				return microerror.Mask(err)
-			}
+		azureClients, err := client.NewAzureClientSet(*config)
+		if err != nil {
+			return microerror.Mask(err)
+		}
 
-			// VMSS List VMs specific limits.
-			{
-				var headers []string
+		result, err := azureClients.VirtualMachineScaleSetVMsClient.ListComplete(ctx, cluster, fmt.Sprintf("%s-master-%s", cluster, cluster), "", "", "")
+		if IsThrottlingError(err) {
+			u.collectMeasuredCallsFromResponse(ch, result, config.SubscriptionID, config.ClientID)
+		} else if err != nil {
+			u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", config.ClientID, "subscriptionid", config.SubscriptionID, "tenantid", config.TenantID, "stack", microerror.JSON(err))
+			continue
+		}
 
-				// Calling the VMSS list machines API to get the metrics.
-				result, err := azureClients.VirtualMachineScaleSetVMsClient.ListComplete(ctx, cr.Name, fmt.Sprintf("%s-master-%s", cr.Name, cr.Name), "", "", "")
-				if err != nil {
-					u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Error calling azure API: %s", err))
-					detailed, ok := err.(autorest.DetailedError)
-					if !ok {
-						u.logger.LogCtx(ctx, fmt.Sprintf("Error listing VM instances on %s: %s", cr.Name, err.Error()))
-						continue
-					}
-					err = nil
-					headers = detailed.Response.Header[vmssVMListHeaderName]
+		// Note that an API request can be subjected to multiple throttling policies.
+		// There will be a separate x-ms-ratelimit-remaining-resource header for each policy.
+		headers, ok := result.Response().Header[vmssVMListHeaderName]
+		if !ok {
+			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Header %#q not found", vmssVMListHeaderName), "headers", result.Response().Header)
+			u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", config.ClientID, "subscriptionid", config.SubscriptionID, "tenantid", config.TenantID, "stack", microerror.JSON(err))
+			vmssVMListErrorCounter.Inc()
+			continue
+		}
 
-					data := tryParseRequestCountFromResponse(detailed)
-					for k, v := range data {
-						ch <- prometheus.MustNewConstMetric(
-							vmssMeasuredCallsDesc,
-							prometheus.GaugeValue,
-							v,
-							config.SubscriptionID,
-							config.ClientID,
-							k,
-						)
-					}
-				}
-
-				if len(headers) == 0 {
-					headers = result.Response().Response.Header[vmssVMListHeaderName]
-				}
-
-				// Header not found, we consider this an error.
-				if len(headers) == 0 {
+		// Example header value: "x-ms-ratelimit-remaining-resource: Microsoft.Compute/DeleteVMScaleSet3Min;107"
+		for _, header := range headers {
+			// Limits are a single comma separated string.
+			tokens := strings.SplitN(header, ",", -1)
+			for _, t := range tokens {
+				// Each limit's name and value are separated by a semicolon.
+				kv := strings.SplitN(t, ";", 2)
+				if len(kv) != 2 {
+					// We expect exactly two tokens, otherwise we consider this a parsing error.
+					u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unexpected limit in header. Expected something like 'Microsoft.Compute/DeleteVMScaleSet3Min;107', got %#q", t))
+					u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", config.ClientID, "subscriptionid", config.SubscriptionID)
 					vmssVMListErrorCounter.Inc()
 					continue
 				}
 
-				for _, l := range headers {
-					// Limits are a single comma separated string.
-					tokens := strings.SplitN(l, ",", -1)
-					for _, t := range tokens {
-						// Each limit's name and value are separated by a semicolon.
-						kv := strings.SplitN(t, ";", 2)
-						if len(kv) != 2 {
-							// We expect exactly two tokens, otherwise we consider this a parsing error.
-							vmssVMListErrorCounter.Inc()
-							continue
-						}
-
-						// The second token must be a number or we don't know what we got from MS.
-						val, err := strconv.ParseFloat(kv[1], 64)
-						if err != nil {
-							vmssVMListErrorCounter.Inc()
-							continue
-						}
-
-						ch <- prometheus.MustNewConstMetric(
-							vmssVMListDesc,
-							prometheus.GaugeValue,
-							val,
-							config.SubscriptionID,
-							config.ClientID,
-							kv[0],
-						)
-
-						if !inArray(doneSubscriptions, config.SubscriptionID) {
-							doneSubscriptions = append(doneSubscriptions, config.SubscriptionID)
-						}
-					}
+				// The second token must be a number or we don't know what we got from MS.
+				val, err := strconv.ParseFloat(kv[1], 64)
+				if err != nil {
+					u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unexpected value in limit. Expected a number, got %v", kv[1]))
+					u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", config.ClientID, "subscriptionid", config.SubscriptionID)
+					vmssVMListErrorCounter.Inc()
+					continue
 				}
+
+				ch <- prometheus.MustNewConstMetric(
+					vmssVMListDesc,
+					prometheus.GaugeValue,
+					val,
+					config.SubscriptionID,
+					config.ClientID,
+					kv[0],
+				)
 			}
 		}
 	}
 
 	return nil
+}
+
+func (u *VMSSRateLimit) getClusters(ctx context.Context) (map[string]*v1.Secret, error) {
+	clustersSecret := make(map[string]*v1.Secret)
+	azureConfigs := &providerv1alpha1.AzureConfigList{}
+	{
+		err := u.ctrlClient.List(ctx, azureConfigs, ctrlclient.InNamespace(metav1.NamespaceAll))
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+	}
+	for _, azureConfig := range azureConfigs.Items {
+		secret := &v1.Secret{}
+		err := u.ctrlClient.Get(ctx, ctrlclient.ObjectKey{Namespace: key.CredentialNamespace(azureConfig), Name: key.CredentialName(azureConfig)}, secret)
+		if err != nil {
+			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping AzureConfig %#q", azureConfig.Name), "stack", microerror.JSON(err))
+			continue
+		}
+		clustersSecret[azureConfig.Name] = secret
+	}
+
+	clusters := &v1alpha3.ClusterList{}
+	{
+		err := u.ctrlClient.List(ctx, clusters, ctrlclient.InNamespace(metav1.NamespaceAll))
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+	}
+	for _, cluster := range clusters.Items {
+		organization, ok := cluster.Labels[label.Organization]
+		if !ok {
+			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(missingOrganizationLabel))
+			continue
+		}
+		secretList := &v1.SecretList{}
+		{
+			err := u.ctrlClient.List(
+				ctx,
+				secretList,
+				ctrlclient.InNamespace(cluster.Namespace),
+				ctrlclient.MatchingLabels{
+					"app":              "credentiald",
+					label.Organization: organization,
+				},
+			)
+			if err != nil {
+				u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(err))
+				continue
+			}
+		}
+		if len(secretList.Items) > 1 {
+			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(tooManyCredentialsError))
+			continue
+		}
+
+		if len(secretList.Items) < 1 {
+			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(credentialsNotFoundError))
+			continue
+		}
+
+		clustersSecret[cluster.Name] = &secretList.Items[0]
+	}
+	return clustersSecret, nil
+}
+
+// collectMeasuredCallsFromResponse When being throttled, the response will contain information with the number of calls being made.
+// https://docs.microsoft.com/en-us/azure/virtual-machines/troubleshooting/troubleshooting-throttling-errors#throttling-error-details
+func (u *VMSSRateLimit) collectMeasuredCallsFromResponse(ch chan<- prometheus.Metric, result compute.VirtualMachineScaleSetVMListResultIterator, subscriptionID, clientID string) {
+	data := tryParseRequestCountFromResponse(result.Response().Response)
+	for k, v := range data {
+		ch <- prometheus.MustNewConstMetric(
+			vmssMeasuredCallsDesc,
+			prometheus.GaugeValue,
+			v,
+			subscriptionID,
+			clientID,
+			k,
+		)
+	}
 }
 
 func (u *VMSSRateLimit) Describe(ch chan<- *prometheus.Desc) error {
@@ -251,10 +297,8 @@ func inArray(a []string, s string) bool {
 // This function is a best-effort attempt at reading the number of API calls we are making
 // towards the Azure VMSS API during a 429.
 // Useful metric to check if the situation is improving or not.
-func tryParseRequestCountFromResponse(detailed autorest.DetailedError) map[string]float64 {
+func tryParseRequestCountFromResponse(response autorest.Response) map[string]float64 {
 	ret := map[string]float64{}
-
-	body := detailed.Response.Body
 
 	type detail struct {
 		Message string `json:"message"`
@@ -269,7 +313,7 @@ func tryParseRequestCountFromResponse(detailed autorest.DetailedError) map[strin
 	}
 
 	var azz errorbody
-	d := json.NewDecoder(body)
+	d := json.NewDecoder(response.Body)
 
 	err := d.Decode(&azz)
 	if err != nil {

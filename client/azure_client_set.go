@@ -149,6 +149,7 @@ func newVirtualMachineScaleSetVMsClient(authorizer autorest.Authorizer, subscrip
 
 	return &client, nil
 }
+
 func newApplicationsClient(clientID, clientSecret, gsTenantID, partnerID string) (*graphrbac.ApplicationsClient, error) {
 	credentials := auth.ClientCredentialsConfig{
 		ClientID:     clientID,
