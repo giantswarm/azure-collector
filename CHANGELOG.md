@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Try to find credential secret in default namespace if it's not found using organization.
+
 ## [2.1.0] - 2020-10-23
 
 ### Added
