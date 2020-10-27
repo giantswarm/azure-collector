@@ -37,6 +37,9 @@ const (
 	// x-ms-ratelimit-remaining-resource: Microsoft.Compute/VmssQueuedVMOperations;4720
 	vmssVMListHeaderName = "X-Ms-Ratelimit-Remaining-Resource"
 	vmssMetricsSubsystem = "rate_limit"
+
+	credentialDefaultNamespace = "giantswarm"
+	credentialDefaultName      = "credential-default"
 )
 
 var (
@@ -226,40 +229,102 @@ func (u *VMSSRateLimit) getClusters(ctx context.Context) (map[string]*v1.Secret,
 		}
 	}
 	for _, cluster := range clusters.Items {
-		organization, ok := cluster.Labels[label.Organization]
-		if !ok {
-			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(missingOrganizationLabel))
-			continue
-		}
-		secretList := &v1.SecretList{}
-		{
-			err := u.ctrlClient.List(
-				ctx,
-				secretList,
-				ctrlclient.InNamespace(cluster.Namespace),
-				ctrlclient.MatchingLabels{
-					"app":              "credentiald",
-					label.Organization: organization,
-				},
-			)
-			if err != nil {
+		credentialSecret, err := u.getOrganizationCredentialSecret(ctx, cluster.ObjectMeta)
+		if IsCredentialsNotFoundError(err) {
+			credentialSecret, err = u.getLegacyCredentialSecret(ctx, cluster.ObjectMeta)
+			if IsCredentialsNotFoundError(err) {
+				credentialSecret = &v1.Secret{}
+				err := u.ctrlClient.Get(ctx, ctrlclient.ObjectKey{Namespace: credentialDefaultNamespace, Name: credentialDefaultName}, credentialSecret)
+				if err != nil {
+					u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(err))
+					continue
+				}
+			} else if err != nil {
 				u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(err))
-				continue
 			}
-		}
-		if len(secretList.Items) > 1 {
-			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(tooManyCredentialsError))
-			continue
+		} else if err != nil {
+			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(err))
 		}
 
-		if len(secretList.Items) < 1 {
-			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(credentialsNotFoundError))
-			continue
-		}
-
-		clustersSecret[cluster.Name] = &secretList.Items[0]
+		clustersSecret[cluster.Name] = credentialSecret
 	}
+
 	return clustersSecret, nil
+}
+
+// getOrganizationCredentialSecret tries to find a Secret in the organization namespace.
+func (u *VMSSRateLimit) getOrganizationCredentialSecret(ctx context.Context, objectMeta metav1.ObjectMeta) (*v1.Secret, error) {
+	organization, ok := objectMeta.Labels[label.Organization]
+	if !ok {
+		return nil, missingOrganizationLabel
+	}
+
+	secretList := &v1.SecretList{}
+	{
+		err := u.ctrlClient.List(
+			ctx,
+			secretList,
+			ctrlclient.InNamespace(objectMeta.Namespace),
+			ctrlclient.MatchingLabels{
+				"app":              "credentiald",
+				label.Organization: organization,
+			},
+		)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+	}
+
+	// We currently only support one credential secret per organization.
+	// If there are more than one, return an error.
+	if len(secretList.Items) > 1 {
+		return nil, microerror.Mask(tooManyCredentialsError)
+	}
+
+	if len(secretList.Items) < 1 {
+		return nil, microerror.Mask(credentialsNotFoundError)
+	}
+
+	// If one credential secret is found, we use that.
+	return &secretList.Items[0], nil
+}
+
+// getLegacyCredentialSecret tries to find a Secret in the default credentials namespace but labeled with the organization name.
+// This is needed while we migrate everything to the org namespace and org credentials are created in the org namespace instead of the default namespace.
+func (u *VMSSRateLimit) getLegacyCredentialSecret(ctx context.Context, objectMeta metav1.ObjectMeta) (*v1.Secret, error) {
+	organization, ok := objectMeta.Labels[label.Organization]
+	if !ok {
+		return nil, missingOrganizationLabel
+	}
+
+	secretList := &v1.SecretList{}
+	{
+		err := u.ctrlClient.List(
+			ctx,
+			secretList,
+			ctrlclient.InNamespace(credentialDefaultNamespace),
+			ctrlclient.MatchingLabels{
+				"app":              "credentiald",
+				label.Organization: organization,
+			},
+		)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+	}
+
+	// We currently only support one credential secret per organization.
+	// If there are more than one, return an error.
+	if len(secretList.Items) > 1 {
+		return nil, microerror.Mask(tooManyCredentialsError)
+	}
+
+	if len(secretList.Items) < 1 {
+		return nil, microerror.Mask(credentialsNotFoundError)
+	}
+
+	// If one credential secret is found, we use that.
+	return &secretList.Items[0], nil
 }
 
 // collectMeasuredCallsFromResponse When being throttled, the response will contain information with the number of calls being made.
