@@ -130,7 +130,6 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 	var doneSubscriptions []string
 	for cluster, secret := range clustersSecret {
-		u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Iterating %s", cluster))
 		config, err := credential.GetAzureConfigFromSecret(secret, u.gsTenantID)
 		if err != nil {
 			return microerror.Mask(err)
@@ -138,6 +137,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 		// We want to check only once per subscription
 		if inArray(doneSubscriptions, config.SubscriptionID) {
+			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q, its subscription was already collected", cluster))
 			continue
 		}
 
@@ -188,7 +188,6 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 					continue
 				}
 
-				u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Sending vmss rate limit metric for %s", cluster))
 				ch <- prometheus.MustNewConstMetric(
 					vmssVMListDesc,
 					prometheus.GaugeValue,
@@ -197,6 +196,8 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 					config.ClientID,
 					kv[0],
 				)
+
+				doneSubscriptions = append(doneSubscriptions, config.SubscriptionID)
 			}
 		}
 	}
