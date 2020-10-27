@@ -130,6 +130,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 	var doneSubscriptions []string
 	for cluster, secret := range clustersSecret {
+		u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Iterating %s", cluster))
 		config, err := credential.GetAzureConfigFromSecret(secret, u.gsTenantID)
 		if err != nil {
 			return microerror.Mask(err)
@@ -187,6 +188,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 					continue
 				}
 
+				u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Sending vmss rate limit metric for %s", cluster))
 				ch <- prometheus.MustNewConstMetric(
 					vmssVMListDesc,
 					prometheus.GaugeValue,
