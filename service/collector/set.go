@@ -121,10 +121,11 @@ func NewSet(config SetConfig) (*Set, error) {
 	var vpnConnectionCollector *VPNConnection
 	{
 		c := VPNConnectionConfig{
-			G8sClient:  config.K8sClient.G8sClient(),
-			K8sClient:  config.K8sClient.K8sClient(),
-			Logger:     config.Logger,
-			GSTenantID: config.GSTenantID,
+			G8sClient:        config.K8sClient.G8sClient(),
+			InstallationName: config.ControlPlaneResourceGroup,
+			K8sClient:        config.K8sClient.K8sClient(),
+			Logger:           config.Logger,
+			GSTenantID:       config.GSTenantID,
 		}
 
 		vpnConnectionCollector, err = NewVPNConnection(c)

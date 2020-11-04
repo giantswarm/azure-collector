@@ -31,22 +31,27 @@ var (
 )
 
 type VPNConnectionConfig struct {
-	G8sClient  versioned.Interface
-	K8sClient  kubernetes.Interface
-	Logger     micrologger.Logger
-	GSTenantID string
+	G8sClient        versioned.Interface
+	InstallationName string
+	K8sClient        kubernetes.Interface
+	Logger           micrologger.Logger
+	GSTenantID       string
 }
 
 type VPNConnection struct {
-	g8sClient  versioned.Interface
-	k8sClient  kubernetes.Interface
-	logger     micrologger.Logger
-	gsTenantID string
+	g8sClient        versioned.Interface
+	installationName string
+	k8sClient        kubernetes.Interface
+	logger           micrologger.Logger
+	gsTenantID       string
 }
 
 func NewVPNConnection(config VPNConnectionConfig) (*VPNConnection, error) {
 	if config.G8sClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.G8sClient must not be empty", config)
+	}
+	if config.InstallationName == "" {
+		return nil, microerror.Maskf(invalidConfigError, "%T.InstallationName must not be empty", config)
 	}
 	if config.K8sClient == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.K8sClient must not be empty", config)
@@ -59,10 +64,11 @@ func NewVPNConnection(config VPNConnectionConfig) (*VPNConnection, error) {
 	}
 
 	v := &VPNConnection{
-		g8sClient:  config.G8sClient,
-		k8sClient:  config.K8sClient,
-		logger:     config.Logger,
-		gsTenantID: config.GSTenantID,
+		g8sClient:        config.G8sClient,
+		installationName: config.InstallationName,
+		k8sClient:        config.K8sClient,
+		logger:           config.Logger,
+		gsTenantID:       config.GSTenantID,
 	}
 
 	return v, nil
@@ -94,6 +100,12 @@ func (v *VPNConnection) Collect(ch chan<- prometheus.Metric) error {
 				connection, err := azureClientSet.VirtualNetworkGatewayConnectionsClient.Get(ctx, clusterID, connectionName)
 				if err != nil {
 					return microerror.Mask(err)
+				}
+
+				// We ignore customer's VPN gateways by filtering the VPN gateway name.
+				// We use the installation name as the VPN gateway name.
+				if to.String(connection.ID) != v.installationName {
+					return nil
 				}
 
 				ch <- prometheus.MustNewConstMetric(
