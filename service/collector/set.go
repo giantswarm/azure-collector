@@ -118,6 +118,19 @@ func NewSet(config SetConfig) (*Set, error) {
 		}
 	}
 
+	var clusterTransitionTime *ClusterTransitionTime
+	{
+		c := ClusterTransitionTimeConfig{
+			CtrlClient: config.K8sClient.CtrlClient(),
+			Logger:     config.Logger,
+		}
+
+		clusterTransitionTime, err = NewClusterTransitionTime(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+	}
+
 	var vpnConnectionCollector *VPNConnection
 	{
 		c := VPNConnectionConfig{
@@ -138,6 +151,7 @@ func NewSet(config SetConfig) (*Set, error) {
 	{
 		c := collector.SetConfig{
 			Collectors: []collector.Interface{
+				clusterTransitionTime,
 				deploymentCollector,
 				resourceGroupCollector,
 				usageCollector,
