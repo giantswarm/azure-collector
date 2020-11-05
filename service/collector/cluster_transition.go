@@ -79,7 +79,7 @@ func (u *ClusterTransitionTime) Collect(ch chan<- prometheus.Metric) error {
 		ch <- prometheus.MustNewConstMetric(
 			clusterTransitionCreateDesc,
 			prometheus.GaugeValue,
-			cluster.CreationTimestamp.Sub(creatingLastTransition.Time).Seconds(),
+			creatingLastTransition.Sub(cluster.CreationTimestamp.Time).Seconds(),
 			cluster.Name,
 			releaseVersion,
 		)
