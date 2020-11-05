@@ -70,19 +70,20 @@ func (u *ClusterTransitionTime) Collect(ch chan<- prometheus.Metric) error {
 			continue
 		}
 
-		if conditions.IsFalse(&cluster, aeconditions.CreatingCondition) {
-			creatingLastTransition := conditions.GetLastTransitionTime(&cluster, aeconditions.CreatingCondition)
-			ch <- prometheus.MustNewConstMetric(
-				clusterTransitionCreateDesc,
-				prometheus.GaugeValue,
-				cluster.CreationTimestamp.Sub(creatingLastTransition.Time).Seconds(),
-				cluster.Name,
-				releaseVersion,
-			)
+		if !conditions.IsFalse(&cluster, aeconditions.CreatingCondition) {
+			u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("Cluster %#q has no %#q condition or it's still being created. Skipping", cluster.Name, aeconditions.CreatingCondition))
+			continue
 		}
 
-		u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("Cluster %#q has no %#q condition or it's still being created. Skipping", cluster.Name, aeconditions.CreatingCondition))
-		continue
+		u.logger.LogCtx(ctx, "level", "debug", "message", "Sending created timestamp metric")
+		creatingLastTransition := conditions.GetLastTransitionTime(&cluster, aeconditions.CreatingCondition)
+		ch <- prometheus.MustNewConstMetric(
+			clusterTransitionCreateDesc,
+			prometheus.GaugeValue,
+			cluster.CreationTimestamp.Sub(creatingLastTransition.Time).Seconds(),
+			cluster.Name,
+			releaseVersion,
+		)
 	}
 
 	return nil
