@@ -63,8 +63,6 @@ func (u *ClusterTransitionTime) Collect(ch chan<- prometheus.Metric) error {
 		}
 	}
 
-	u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("FOUND %d clusters", len(clusters.Items)))
-
 	for _, cluster := range clusters.Items {
 		releaseVersion, ok := cluster.Labels[label.ReleaseVersion]
 		if !ok {
@@ -77,7 +75,6 @@ func (u *ClusterTransitionTime) Collect(ch chan<- prometheus.Metric) error {
 			continue
 		}
 
-		u.logger.LogCtx(ctx, "level", "debug", "message", "Sending created timestamp metric")
 		creatingLastTransition := conditions.GetLastTransitionTime(&cluster, aeconditions.CreatingCondition)
 		ch <- prometheus.MustNewConstMetric(
 			clusterTransitionCreateDesc,
