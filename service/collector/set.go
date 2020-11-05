@@ -137,6 +137,7 @@ func NewSet(config SetConfig) (*Set, error) {
 			CtrlClient: config.K8sClient.CtrlClient(),
 			Logger:     config.Logger,
 		}
+
 		conditionsCollector, err = NewConditions(c)
 		if err != nil {
 			return nil, microerror.Mask(err)
