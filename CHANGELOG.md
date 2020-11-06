@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add new collector to expose `Cluster` CR conditions as metrics to be used as inhibitions.
+
 ## [2.2.0] - 2020-11-05
 
 ### Added

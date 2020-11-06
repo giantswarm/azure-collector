@@ -131,6 +131,19 @@ func NewSet(config SetConfig) (*Set, error) {
 		}
 	}
 
+	var conditionsCollector *Conditions
+	{
+		c := ConditionsConfig{
+			CtrlClient: config.K8sClient.CtrlClient(),
+			Logger:     config.Logger,
+		}
+
+		conditionsCollector, err = NewConditions(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+	}
+
 	var vpnConnectionCollector *VPNConnection
 	{
 		c := VPNConnectionConfig{
@@ -152,11 +165,12 @@ func NewSet(config SetConfig) (*Set, error) {
 		c := collector.SetConfig{
 			Collectors: []collector.Interface{
 				clusterTransitionTime,
+				conditionsCollector,
 				deploymentCollector,
 				resourceGroupCollector,
-				usageCollector,
 				rateLimitCollector,
 				spExpirationCollector,
+				usageCollector,
 				vmssRateLimitCollector,
 				vpnConnectionCollector,
 			},
