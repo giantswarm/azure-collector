@@ -137,7 +137,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 		// We want to check only once per subscription
 		if inArray(doneSubscriptions, config.SubscriptionID) {
-			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q, its subscription was already collected", cluster))
+			u.logger.Debugf(ctx, "Skipping Cluster %#q, its subscription was already collected", cluster)
 			continue
 		}
 
@@ -173,7 +173,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 				kv := strings.SplitN(t, ";", 2)
 				if len(kv) != 2 {
 					// We expect exactly two tokens, otherwise we consider this a parsing error.
-					u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unexpected limit in header. Expected something like 'Microsoft.Compute/DeleteVMScaleSet3Min;107', got %#q", t))
+					u.logger.Errorf(ctx, nil, "Unexpected limit in header. Expected something like 'Microsoft.Compute/DeleteVMScaleSet3Min;107', got %#q", t)
 					u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", config.ClientID, "subscriptionid", config.SubscriptionID)
 					vmssVMListErrorCounter.Inc()
 					continue
@@ -182,7 +182,7 @@ func (u *VMSSRateLimit) Collect(ch chan<- prometheus.Metric) error {
 				// The second token must be a number or we don't know what we got from MS.
 				val, err := strconv.ParseFloat(kv[1], 64)
 				if err != nil {
-					u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unexpected value in limit. Expected a number, got %v", kv[1]))
+					u.logger.Errorf(ctx, err, "Unexpected value in limit. Expected a number, got %v", kv[1])
 					u.logger.LogCtx(ctx, "level", "warning", "message", "Skipping", "clientid", config.ClientID, "subscriptionid", config.SubscriptionID)
 					vmssVMListErrorCounter.Inc()
 					continue
@@ -218,7 +218,7 @@ func (u *VMSSRateLimit) getClusters(ctx context.Context) (map[string]*v1.Secret,
 		secret := &v1.Secret{}
 		err := u.ctrlClient.Get(ctx, ctrlclient.ObjectKey{Namespace: key.CredentialNamespace(azureConfig), Name: key.CredentialName(azureConfig)}, secret)
 		if err != nil {
-			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping AzureConfig %#q", azureConfig.Name), "stack", microerror.JSON(err))
+			u.logger.Errorf(ctx, err, "Skipping AzureConfig %#q", azureConfig.Name)
 			continue
 		}
 		clustersSecret[azureConfig.Name] = secret
@@ -239,14 +239,14 @@ func (u *VMSSRateLimit) getClusters(ctx context.Context) (map[string]*v1.Secret,
 				credentialSecret = &v1.Secret{}
 				err := u.ctrlClient.Get(ctx, ctrlclient.ObjectKey{Namespace: credentialDefaultNamespace, Name: credentialDefaultName}, credentialSecret)
 				if err != nil {
-					u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(err))
+					u.logger.Errorf(ctx, err, "Skipping Cluster %#q", cluster.Name)
 					continue
 				}
 			} else if err != nil {
-				u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(err))
+				u.logger.Errorf(ctx, err, "Skipping Cluster %#q", cluster.Name)
 			}
 		} else if err != nil {
-			u.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Skipping Cluster %#q", cluster.Name), "stack", microerror.JSON(err))
+			u.logger.Errorf(ctx, err, "Skipping Cluster %#q", cluster.Name)
 		}
 
 		clustersSecret[cluster.Name] = credentialSecret

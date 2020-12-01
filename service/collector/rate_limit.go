@@ -140,13 +140,13 @@ func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
 			}
 			resourceGroup, err := clientSet.GroupsClient.CreateOrUpdate(ctx, u.getResourceGroupName(), resourceGroup)
 			if err != nil {
-				u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("clientid %#q gstenantid %#q tenantid %#q", clientConfig.ClientID, clientConfig.GSTenantID, clientConfig.TenantID))
+				u.logger.Debugf(ctx, "clientid %#q gstenantid %#q tenantid %#q", clientConfig.ClientID, clientConfig.GSTenantID, clientConfig.TenantID)
 				return microerror.Mask(err)
 			}
 
 			writes, err = strconv.ParseFloat(resourceGroup.Response.Header.Get(remainingWritesHeaderName), 64)
 			if err != nil {
-				u.logger.Log("level", "warning", "message", "an error occurred parsing to float the value inside the rate limiting header for write requests", "stack", microerror.JSON(microerror.Mask(err)))
+				u.logger.Errorf(ctx, err, "an error occurred parsing to float the value inside the rate limiting header for write requests")
 				writes = 0
 				writesErrorCounter.Inc()
 			}
@@ -172,7 +172,7 @@ func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
 
 			reads, err = strconv.ParseFloat(groupResponse.Response.Header.Get(remainingReadsHeaderName), 64)
 			if err != nil {
-				u.logger.Log("level", "warning", "message", "an error occurred parsing to float the value inside the rate limiting header for read requests", "stack", microerror.JSON(microerror.Mask(err)))
+				u.logger.Errorf(ctx, err, "an error occurred parsing to float the value inside the rate limiting header for read requests")
 				reads = 0
 				readsErrorCounter.Inc()
 			}

@@ -92,7 +92,7 @@ func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 	}
 
 	if len(azureClientSets) < 1 {
-		v.logger.LogCtx(ctx, "level", "debug", "message", "No clusters, skipping SP expiration collector")
+		v.logger.Debugf(ctx, "No clusters, skipping SP expiration collector")
 		return nil
 	}
 
