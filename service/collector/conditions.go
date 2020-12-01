@@ -2,7 +2,6 @@ package collector
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/giantswarm/apiextensions/v2/pkg/label"
 	aeconditions "github.com/giantswarm/apiextensions/v3/pkg/conditions"
@@ -67,7 +66,7 @@ func (u *Conditions) Collect(ch chan<- prometheus.Metric) error {
 	for _, cluster := range clusters.Items {
 		releaseVersion, ok := cluster.Labels[label.ReleaseVersion]
 		if !ok {
-			u.logger.LogCtx(ctx, "level", "debug", "message", fmt.Sprintf("Cluster %#q has no %#q label. Skipping", cluster.Name, label.ReleaseVersion))
+			u.logger.Debugf(ctx, "Cluster %#q has no %#q label. Skipping", cluster.Name, label.ReleaseVersion)
 			continue
 		}
 
