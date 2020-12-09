@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Extract Cluster CR derived metrics collectors to be called with given CR
+  instance so Cluster CRs can be listed once and collectors can be then
+  iterated over CR instances.
+
 ### Added
 
 - Add new collector to expose `Cluster` CR conditions as metrics to be used as inhibitions.
