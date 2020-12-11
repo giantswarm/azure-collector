@@ -5,6 +5,8 @@ import (
 	"github.com/giantswarm/k8sclient/v4/pkg/k8sclient"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
+
+	"github.com/giantswarm/azure-collector/v2/service/collector/cluster"
 )
 
 const (
@@ -28,6 +30,27 @@ type Set struct {
 
 func NewSet(config SetConfig) (*Set, error) {
 	var err error
+
+	var clusterCollectors *cluster.Collectors
+	{
+		clusterCollectors, err = cluster.NewCollectors(config.K8sClient.CtrlClient(), config.Logger)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		conditions, err := cluster.NewConditions(config.K8sClient.CtrlClient(), config.Logger)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		transition, err := cluster.NewTransitionTime(config.K8sClient.CtrlClient(), config.Logger)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		clusterCollectors.Add(conditions)
+		clusterCollectors.Add(transition)
+	}
 
 	var deploymentCollector *Deployment
 	{
@@ -118,32 +141,6 @@ func NewSet(config SetConfig) (*Set, error) {
 		}
 	}
 
-	var clusterTransitionTime *ClusterTransitionTime
-	{
-		c := ClusterTransitionTimeConfig{
-			CtrlClient: config.K8sClient.CtrlClient(),
-			Logger:     config.Logger,
-		}
-
-		clusterTransitionTime, err = NewClusterTransitionTime(c)
-		if err != nil {
-			return nil, microerror.Mask(err)
-		}
-	}
-
-	var conditionsCollector *Conditions
-	{
-		c := ConditionsConfig{
-			CtrlClient: config.K8sClient.CtrlClient(),
-			Logger:     config.Logger,
-		}
-
-		conditionsCollector, err = NewConditions(c)
-		if err != nil {
-			return nil, microerror.Mask(err)
-		}
-	}
-
 	var vpnConnectionCollector *VPNConnection
 	{
 		c := VPNConnectionConfig{
@@ -164,8 +161,7 @@ func NewSet(config SetConfig) (*Set, error) {
 	{
 		c := collector.SetConfig{
 			Collectors: []collector.Interface{
-				clusterTransitionTime,
-				conditionsCollector,
+				clusterCollectors,
 				deploymentCollector,
 				resourceGroupCollector,
 				rateLimitCollector,
