@@ -53,6 +53,8 @@ func (c *Collectors) Collect(ch chan<- prometheus.Metric) error {
 	}
 
 	for _, cr := range clusters.Items {
+		c.logger.Debugf(ctx, "collecting metrics for cluster %q", cr.Name)
+
 		for _, collector := range c.collectors {
 			err := collector.Collect(ctx, &cr, ch)
 			if err != nil {

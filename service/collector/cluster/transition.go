@@ -47,6 +47,8 @@ func NewTransitionTime(ctrlClient client.Client, logger micrologger.Logger) (*Tr
 }
 
 func (t *TransitionTime) Collect(ctx context.Context, cluster *capiv1alpha3.Cluster, ch chan<- prometheus.Metric) error {
+	t.logger.Debugf(ctx, "collected cluster transition time metric for cluster %q", cluster.Name)
+
 	releaseVersion, ok := cluster.Labels[label.ReleaseVersion]
 	if !ok {
 		t.logger.Debugf(ctx, "Cluster %#q has no %#q label. Skipping", cluster.Name, label.ReleaseVersion)
@@ -67,6 +69,7 @@ func (t *TransitionTime) Collect(ctx context.Context, cluster *capiv1alpha3.Clus
 		releaseVersion,
 	)
 
+	t.logger.Debugf(ctx, "collected cluster transition time metric for cluster %q", cluster.Name)
 	return nil
 }
 

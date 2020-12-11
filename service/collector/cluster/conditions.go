@@ -48,6 +48,8 @@ func NewConditions(ctrlClient client.Client, logger micrologger.Logger) (*Condit
 }
 
 func (c *Conditions) Collect(ctx context.Context, cluster *capiv1alpha3.Cluster, ch chan<- prometheus.Metric) error {
+	c.logger.Debugf(ctx, "collecting cluster condition status metric for cluster %q", cluster.Name)
+
 	releaseVersion, ok := cluster.Labels[label.ReleaseVersion]
 	if !ok {
 		c.logger.Debugf(ctx, "Cluster %#q has no %#q label. Skipping", cluster.Name, label.ReleaseVersion)
@@ -79,6 +81,8 @@ func (c *Conditions) Collect(ctx context.Context, cluster *capiv1alpha3.Cluster,
 		releaseVersion,
 		string(aeconditions.UpgradingCondition),
 	)
+
+	c.logger.Debugf(ctx, "collected cluster condition status metric for cluster %q", cluster.Name)
 
 	return nil
 }
