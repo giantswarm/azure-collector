@@ -43,12 +43,18 @@ func NewSet(config SetConfig) (*Set, error) {
 			return nil, microerror.Mask(err)
 		}
 
+		releases, err := cluster.NewReleases(config.K8sClient.CtrlClient(), config.Logger)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
 		transition, err := cluster.NewTransitionTime(config.K8sClient.CtrlClient(), config.Logger)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
 
 		clusterCollectors.Add(conditions)
+		clusterCollectors.Add(releases)
 		clusterCollectors.Add(transition)
 	}
 
