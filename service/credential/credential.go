@@ -102,7 +102,7 @@ func GetAzureClientSetsFromCredentialSecrets(ctx context.Context, k8sclient kube
 	}
 
 	for _, secret := range secrets {
-		azureClientSetConfig, err := GetAzureConfigFromSecret(&secret, gsTenantID)
+		azureClientSetConfig, err := GetAzureConfigFromSecret(&secret, gsTenantID) //nolint:gosec
 		if err != nil {
 			return azureClientSets, microerror.Mask(err)
 		}
