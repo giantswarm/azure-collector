@@ -54,7 +54,7 @@ func (c *Collectors) Collect(ch chan<- prometheus.Metric) error {
 
 	for _, cr := range clusters.Items {
 		for _, collector := range c.collectors {
-			err := collector.Collect(ctx, &cr, ch)
+			err := collector.Collect(ctx, &cr, ch) //nolint:gosec
 			if err != nil {
 				return microerror.Mask(err)
 			}
