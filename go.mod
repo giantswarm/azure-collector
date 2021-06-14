@@ -20,7 +20,7 @@ require (
 	github.com/giantswarm/statusresource/v2 v2.0.0
 	github.com/giantswarm/versionbundle v0.2.0
 	github.com/google/go-cmp v0.5.6
-	github.com/prometheus/client_golang v1.10.0
+	github.com/prometheus/client_golang v1.11.0
 	github.com/spf13/viper v1.7.1
 	golang.org/x/sync v0.0.0-20201207232520-09787c993a3a
 	k8s.io/api v0.18.19
