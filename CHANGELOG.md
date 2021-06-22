@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Avoid scraping service principal expiration on customer installations.
+
 ## [2.5.0] - 2021-06-22
 
 ### Changed

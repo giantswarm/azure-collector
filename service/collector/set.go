@@ -11,6 +11,8 @@ import (
 
 const (
 	MetricsNamespace = "azure_operator"
+
+	gsTenantID = "31f75bf9-3d8c-4691-95c0-83dd71613db8"
 )
 
 type SetConfig struct {
@@ -30,10 +32,10 @@ type Set struct {
 
 func NewSet(config SetConfig) (*Set, error) {
 	var err error
+	var collectors []collector.Interface
 
-	var clusterCollectors *cluster.Collectors
 	{
-		clusterCollectors, err = cluster.NewCollectors(config.K8sClient.CtrlClient(), config.Logger)
+		clusterCollectors, err := cluster.NewCollectors(config.K8sClient.CtrlClient(), config.Logger)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
@@ -56,9 +58,9 @@ func NewSet(config SetConfig) (*Set, error) {
 		clusterCollectors.Add(conditions)
 		clusterCollectors.Add(releases)
 		clusterCollectors.Add(transition)
+		collectors = append(collectors, clusterCollectors)
 	}
 
-	var deploymentCollector *Deployment
 	{
 		c := DeploymentConfig{
 			G8sClient:  config.K8sClient.G8sClient(),
@@ -67,13 +69,14 @@ func NewSet(config SetConfig) (*Set, error) {
 			GSTenantID: config.GSTenantID,
 		}
 
-		deploymentCollector, err = NewDeployment(c)
+		deploymentCollector, err := NewDeployment(c)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
+
+		collectors = append(collectors, deploymentCollector)
 	}
 
-	var resourceGroupCollector *ResourceGroup
 	{
 		c := ResourceGroupConfig{
 			K8sClient:  config.K8sClient.K8sClient(),
@@ -81,13 +84,14 @@ func NewSet(config SetConfig) (*Set, error) {
 			GSTenantID: config.GSTenantID,
 		}
 
-		resourceGroupCollector, err = NewResourceGroup(c)
+		resourceGroupCollector, err := NewResourceGroup(c)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
+
+		collectors = append(collectors, resourceGroupCollector)
 	}
 
-	var usageCollector *Usage
 	{
 		c := UsageConfig{
 			G8sClient:  config.K8sClient.G8sClient(),
@@ -97,13 +101,14 @@ func NewSet(config SetConfig) (*Set, error) {
 			GSTenantID: config.GSTenantID,
 		}
 
-		usageCollector, err = NewUsage(c)
+		usageCollector, err := NewUsage(c)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
+
+		collectors = append(collectors, usageCollector)
 	}
 
-	var rateLimitCollector *RateLimit
 	{
 		c := RateLimitConfig{
 			G8sClient:  config.K8sClient.G8sClient(),
@@ -113,27 +118,31 @@ func NewSet(config SetConfig) (*Set, error) {
 			GSTenantID: config.GSTenantID,
 		}
 
-		rateLimitCollector, err = NewRateLimit(c)
+		rateLimitCollector, err := NewRateLimit(c)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
+
+		collectors = append(collectors, rateLimitCollector)
 	}
 
-	var spExpirationCollector *SPExpiration
 	{
-		c := SPExpirationConfig{
-			K8sClient:  config.K8sClient.K8sClient(),
-			Logger:     config.Logger,
-			GSTenantID: config.GSTenantID,
-		}
+		if config.GSTenantID == gsTenantID {
+			c := SPExpirationConfig{
+				K8sClient:  config.K8sClient.K8sClient(),
+				Logger:     config.Logger,
+				GSTenantID: config.GSTenantID,
+			}
 
-		spExpirationCollector, err = NewSPExpiration(c)
-		if err != nil {
-			return nil, microerror.Mask(err)
+			spExpirationCollector, err := NewSPExpiration(c)
+			if err != nil {
+				return nil, microerror.Mask(err)
+			}
+
+			collectors = append(collectors, spExpirationCollector)
 		}
 	}
 
-	var vmssRateLimitCollector *VMSSRateLimit
 	{
 		c := VMSSRateLimitConfig{
 			CtrlClient: config.K8sClient.CtrlClient(),
@@ -141,13 +150,14 @@ func NewSet(config SetConfig) (*Set, error) {
 			GSTenantID: config.GSTenantID,
 		}
 
-		vmssRateLimitCollector, err = NewVMSSRateLimit(c)
+		vmssRateLimitCollector, err := NewVMSSRateLimit(c)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
+
+		collectors = append(collectors, vmssRateLimitCollector)
 	}
 
-	var vpnConnectionCollector *VPNConnection
 	{
 		c := VPNConnectionConfig{
 			G8sClient:        config.K8sClient.G8sClient(),
@@ -157,26 +167,19 @@ func NewSet(config SetConfig) (*Set, error) {
 			GSTenantID:       config.GSTenantID,
 		}
 
-		vpnConnectionCollector, err = NewVPNConnection(c)
+		vpnConnectionCollector, err := NewVPNConnection(c)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
+
+		collectors = append(collectors, vpnConnectionCollector)
 	}
 
 	var collectorSet *collector.Set
 	{
 		c := collector.SetConfig{
-			Collectors: []collector.Interface{
-				clusterCollectors,
-				deploymentCollector,
-				resourceGroupCollector,
-				rateLimitCollector,
-				spExpirationCollector,
-				usageCollector,
-				vmssRateLimitCollector,
-				vpnConnectionCollector,
-			},
-			Logger: config.Logger,
+			Collectors: collectors,
+			Logger:     config.Logger,
 		}
 
 		collectorSet, err = collector.NewSet(c)
