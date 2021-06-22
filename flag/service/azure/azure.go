@@ -6,5 +6,4 @@ type Azure struct {
 	PartnerID      string
 	SubscriptionID string
 	TenantID       string
-	SPTenantID     string
 }

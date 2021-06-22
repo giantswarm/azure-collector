@@ -126,7 +126,7 @@ func New(config Config) (*Service, error) {
 			Location:                  config.Viper.GetString(config.Flag.Service.Location),
 			Logger:                    config.Logger,
 			K8sClient:                 k8sClient,
-			GSTenantID:                config.Viper.GetString(config.Flag.Service.Azure.SPTenantID),
+			GSTenantID:                config.Viper.GetString(config.Flag.Service.Azure.TenantID),
 		}
 
 		operatorCollector, err = collector.NewSet(c)
