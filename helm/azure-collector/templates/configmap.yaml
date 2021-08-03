@@ -14,7 +14,7 @@ data:
       listen:
         address: 'http://0.0.0.0:8000'
     service:
-      controlplaneresourcegroup: '{{ .Values.Installation.V1.Name }}'
-      location: '{{ .Values.Installation.V1.Provider.Azure.Location }}'
+      controlplaneresourcegroup: '{{ .Values.managementCluster.name }}'
+      location: '{{ .Values.provider.location }}'
       kubernetes:
         incluster: true
