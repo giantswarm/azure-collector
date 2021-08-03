@@ -4,10 +4,6 @@ project:
 image:
   name: "giantswarm/azure-collector"
   tag: "[[ .Version ]]"
-Installation:
-  V1:
-    Registry:
-      Domain: quay.io
 pod:
   user:
     id: 1000
@@ -30,3 +26,19 @@ resource:
     namespace: "giantswarm"
   psp:
     name: '{{ .Release.Name | replace "." "-" | trunc 47 }}-psp'
+
+
+registry:
+  domain: docker.io
+
+managementCluster:
+  name: ""
+
+provider:
+  location: ""
+  credentials:
+    clientID: ""
+    clientSecret: ""
+    sptenantID: ""
+    subscriptionID: ""
+    tenantID: ""
