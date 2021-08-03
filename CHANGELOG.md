@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.0] - 2021-08-03
+
 ### Changed
 
 - Prepare helm values to configuration management.
@@ -128,7 +130,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/giantswarm/azure-collector/compare/v2.6.0...HEAD
+[Unreleased]: https://github.com/giantswarm/azure-collector/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/giantswarm/azure-collector/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/giantswarm/azure-collector/compare/v2.5.1...v2.6.0
 [2.5.1]: https://github.com/giantswarm/azure-collector/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/giantswarm/azure-collector/compare/v2.4.0...v2.5.0
