@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.7.1] - 2021-08-27
+
 ### Fixed
 
 - Short-circuit credential lookup when secret reading fails one way or another.
@@ -134,7 +136,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 
-[Unreleased]: https://github.com/giantswarm/azure-collector/compare/v2.7.0...HEAD
+[Unreleased]: https://github.com/giantswarm/azure-collector/compare/v2.7.1...HEAD
+[2.7.1]: https://github.com/giantswarm/azure-collector/compare/v2.7.0...v2.7.1
 [2.7.0]: https://github.com/giantswarm/azure-collector/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/giantswarm/azure-collector/compare/v2.5.1...v2.6.0
 [2.5.1]: https://github.com/giantswarm/azure-collector/compare/v2.5.0...v2.5.1
