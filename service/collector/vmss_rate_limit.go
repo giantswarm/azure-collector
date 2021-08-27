@@ -244,9 +244,11 @@ func (u *VMSSRateLimit) getClusters(ctx context.Context) (map[string]*v1.Secret,
 				}
 			} else if err != nil {
 				u.logger.Errorf(ctx, err, "Skipping Cluster %#q", cluster.Name)
+				continue
 			}
 		} else if err != nil {
 			u.logger.Errorf(ctx, err, "Skipping Cluster %#q", cluster.Name)
+			continue
 		}
 
 		clustersSecret[cluster.Name] = credentialSecret
