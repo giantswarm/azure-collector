@@ -78,6 +78,22 @@ func NewSet(config SetConfig) (*Set, error) {
 	}
 
 	{
+		c := LoadBalancerConfig{
+			G8sClient:  config.K8sClient.G8sClient(),
+			K8sClient:  config.K8sClient.K8sClient(),
+			Logger:     config.Logger,
+			GSTenantID: config.GSTenantID,
+		}
+
+		loadBalancerCollector, err := NewLoadBalancer(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		collectors = append(collectors, loadBalancerCollector)
+	}
+
+	{
 		c := ResourceGroupConfig{
 			K8sClient:  config.K8sClient.K8sClient(),
 			Logger:     config.Logger,

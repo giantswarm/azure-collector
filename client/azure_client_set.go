@@ -35,6 +35,8 @@ type AzureClientSet struct {
 	DeploymentsClient *resources.DeploymentsClient
 	// GroupsClient manages ARM resource groups.
 	GroupsClient *resources.GroupsClient
+	// LoadBalancersClient manages Load Balancer resources.
+	LoadBalancersClient *network.LoadBalancersClient
 	// UsageClient is used to work with limits and quotas.
 	UsageClient *compute.UsageClient
 	// VirtualNetworkGatewayConnectionsClient manages virtual network gateway connections.
@@ -83,6 +85,10 @@ func NewAzureClientSet(config AzureClientSetConfig) (*AzureClientSet, error) {
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
+	loadBalancersClient, err := newLoadBalancersClient(config.Authorizer, config.SubscriptionID, config.PartnerID)
+	if err != nil {
+		return nil, microerror.Mask(err)
+	}
 	usageClient, err := newUsageClient(config.Authorizer, config.SubscriptionID, config.PartnerID)
 	if err != nil {
 		return nil, microerror.Mask(err)
@@ -100,6 +106,7 @@ func NewAzureClientSet(config AzureClientSetConfig) (*AzureClientSet, error) {
 		ApplicationsClient:                     applicationsClient,
 		DeploymentsClient:                      deploymentsClient,
 		GroupsClient:                           groupsClient,
+		LoadBalancersClient:                    loadBalancersClient,
 		UsageClient:                            usageClient,
 		VirtualNetworkGatewayConnectionsClient: virtualNetworkGatewayConnectionsClient,
 		VirtualMachineScaleSetVMsClient:        virtualMachineScaleSetVMsClient,
@@ -124,6 +131,13 @@ func newDeploymentsClient(authorizer autorest.Authorizer, subscriptionID, partne
 
 func newGroupsClient(authorizer autorest.Authorizer, subscriptionID, partnerID string) (*resources.GroupsClient, error) {
 	client := resources.NewGroupsClient(subscriptionID)
+	prepareClient(&client.Client, authorizer, partnerID)
+
+	return &client, nil
+}
+
+func newLoadBalancersClient(authorizer autorest.Authorizer, subscriptionID, partnerID string) (*network.LoadBalancersClient, error) {
+	client := network.NewLoadBalancersClient(subscriptionID)
 	prepareClient(&client.Client, authorizer, partnerID)
 
 	return &client, nil

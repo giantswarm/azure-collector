@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add exporter with number of instances backing Load Balancers.
+
 ## [2.7.1] - 2021-08-27
 
 ### Fixed
