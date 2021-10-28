@@ -3,7 +3,7 @@ module github.com/giantswarm/azure-collector/v2
 go 1.15
 
 require (
-	github.com/Azure/azure-sdk-for-go v45.1.2+incompatible
+	github.com/Azure/azure-sdk-for-go/v59 v59.0.0
 	github.com/Azure/go-autorest/autorest v0.11.19
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.8
 	github.com/Azure/go-autorest/autorest/to v0.4.0
