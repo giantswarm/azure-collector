@@ -5,5 +5,5 @@ description: Collector that exposes metrics about Azure
 home: "https://github.com/giantswarm/azure-collector"
 apiVersion: v1
 annotations:
-  application.giantswarm.io/team: "celestial"
+  application.giantswarm.io/team: "phoenix"
   config.giantswarm.io/version: 1.x.x
