@@ -94,5 +94,6 @@ func (n *NodePools) Collect(ctx context.Context, cluster *capiv1alpha3.Cluster, 
 
 func (n *NodePools) Describe(ch chan<- *prometheus.Desc) error {
 	ch <- clusterNodePools
+	ch <- clusterWorkers
 	return nil
 }
