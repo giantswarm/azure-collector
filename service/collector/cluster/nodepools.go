@@ -4,10 +4,12 @@ import (
 	"context"
 	"strconv"
 
+	"github.com/giantswarm/apiextensions/v3/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
 	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	"sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -28,11 +30,11 @@ var (
 	)
 
 	clusterWorkers = prometheus.NewDesc(
-		prometheus.BuildFQName(MetricsNamespace, "cluster", "workers"),
+		prometheus.BuildFQName(MetricsNamespace, "cluster", "worker_nodes"),
 		"Exposes the number of worker nodes in a cluster",
 		[]string{
 			"cluster_id",
-			"has_workers",
+			"has_worker_nodes",
 		},
 		nil,
 	)
@@ -55,8 +57,22 @@ func NewNodePools(ctrlClient client.Client, logger micrologger.Logger) (*NodePoo
 }
 
 func (n *NodePools) Collect(ctx context.Context, cluster *capiv1alpha3.Cluster, ch chan<- prometheus.Metric) error {
-	nodePoolsCount := 1
-	currentWorkersCount := 4
+	var nodePoolsCount int
+	var currentWorkersCount int32
+	{
+		nps := v1alpha3.MachinePoolList{}
+		err := n.ctrlClient.List(ctx, &nps, client.MatchingLabels{label.Cluster: cluster.Name})
+		if err != nil {
+			return microerror.Mask(err)
+		}
+
+		nodePoolsCount = len(nps.Items)
+
+		for _, np := range nps.Items {
+			currentWorkersCount += np.Status.Replicas
+		}
+	}
+
 	ch <- prometheus.MustNewConstMetric(
 		clusterNodePools,
 		prometheus.GaugeValue,
