@@ -3,11 +3,10 @@ module github.com/giantswarm/azure-collector/v2
 go 1.15
 
 require (
-	github.com/Azure/azure-sdk-for-go v45.1.2+incompatible
+	github.com/Azure/azure-sdk-for-go v48.2.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.19
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.8
 	github.com/Azure/go-autorest/autorest/to v0.4.0
-	github.com/Azure/go-autorest/autorest/validation v0.3.0 // indirect
 	github.com/giantswarm/apiextensions/v2 v2.6.2
 	github.com/giantswarm/apiextensions/v3 v3.32.0
 	github.com/giantswarm/exporterkit v0.2.1
@@ -27,6 +26,7 @@ require (
 	k8s.io/apimachinery v0.18.19
 	k8s.io/client-go v0.18.19
 	sigs.k8s.io/cluster-api v0.4.0
+	sigs.k8s.io/cluster-api-provider-azure v0.4.15
 	sigs.k8s.io/controller-runtime v0.6.4
 )
 
