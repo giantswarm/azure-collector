@@ -88,6 +88,13 @@ rules:
       - machinepools
     verbs:
       - list
+  - apiGroups:
+      - infrastructure.cluster.x-k8s.io
+    resources:
+      - azureclusters
+      - azureclusteridentities
+    verbs:
+      - get
   - nonResourceURLs:
       - "/"
       - "/healthz"
