@@ -82,6 +82,12 @@ rules:
       - {{ tpl .Values.resource.default.name  . }}
     verbs:
       - get
+  - apiGroups:
+      - exp.cluster.x-k8s.io
+    resources:
+      - machinepools
+    verbs:
+      - list
   - nonResourceURLs:
       - "/"
       - "/healthz"
