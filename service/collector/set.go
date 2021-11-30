@@ -45,6 +45,11 @@ func NewSet(config SetConfig) (*Set, error) {
 			return nil, microerror.Mask(err)
 		}
 
+		nodepools, err := cluster.NewNodePools(config.K8sClient.CtrlClient(), config.Logger)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
 		releases, err := cluster.NewReleases(config.K8sClient.CtrlClient(), config.Logger)
 		if err != nil {
 			return nil, microerror.Mask(err)
@@ -56,6 +61,7 @@ func NewSet(config SetConfig) (*Set, error) {
 		}
 
 		clusterCollectors.Add(conditions)
+		clusterCollectors.Add(nodepools)
 		clusterCollectors.Add(releases)
 		clusterCollectors.Add(transition)
 		collectors = append(collectors, clusterCollectors)
