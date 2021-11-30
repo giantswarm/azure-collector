@@ -3,7 +3,6 @@ package cluster
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2019-07-01/compute"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
@@ -29,7 +28,6 @@ var (
 		"Exposes the number of node pools in a cluster",
 		[]string{
 			"cluster_id",
-			"has_node_pools",
 		},
 		nil,
 	)
@@ -39,7 +37,6 @@ var (
 		"Exposes the number of worker nodes in a cluster",
 		[]string{
 			"cluster_id",
-			"has_worker_nodes",
 		},
 		nil,
 	)
@@ -110,7 +107,6 @@ func (n *NodePools) Collect(ctx context.Context, cluster *capiv1alpha3.Cluster, 
 		prometheus.GaugeValue,
 		float64(nodePoolsCount),
 		cluster.Name,
-		strconv.FormatBool(nodePoolsCount > 0),
 	)
 
 	ch <- prometheus.MustNewConstMetric(
@@ -118,7 +114,6 @@ func (n *NodePools) Collect(ctx context.Context, cluster *capiv1alpha3.Cluster, 
 		prometheus.GaugeValue,
 		float64(currentWorkersCount),
 		cluster.Name,
-		strconv.FormatBool(currentWorkersCount > 0),
 	)
 
 	return nil
