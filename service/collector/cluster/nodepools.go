@@ -69,7 +69,7 @@ func (n *NodePools) Collect(ctx context.Context, cluster *capiv1alpha3.Cluster, 
 		nodePoolsCount = len(nps.Items)
 
 		for _, np := range nps.Items {
-			currentWorkersCount += np.Status.Replicas
+			currentWorkersCount += *np.Spec.Replicas
 		}
 	}
 
