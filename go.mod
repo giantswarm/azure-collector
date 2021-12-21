@@ -25,8 +25,8 @@ require (
 	k8s.io/api v0.18.19
 	k8s.io/apimachinery v0.18.19
 	k8s.io/client-go v0.18.19
-	sigs.k8s.io/cluster-api v0.4.0
-	sigs.k8s.io/cluster-api-provider-azure v0.4.15
+	sigs.k8s.io/cluster-api v1.0.2
+	sigs.k8s.io/cluster-api-provider-azure v1.1.0
 	sigs.k8s.io/controller-runtime v0.6.4
 )
 
