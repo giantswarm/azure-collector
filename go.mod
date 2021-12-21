@@ -9,18 +9,18 @@ require (
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/giantswarm/apiextensions/v2 v2.6.2
 	github.com/giantswarm/apiextensions/v3 v3.32.0
-	github.com/giantswarm/exporterkit v0.2.1
+	github.com/giantswarm/exporterkit v1.0.0
 	github.com/giantswarm/k8sclient/v4 v4.1.0
-	github.com/giantswarm/microendpoint v0.2.0
-	github.com/giantswarm/microerror v0.3.0
-	github.com/giantswarm/microkit v0.2.2
-	github.com/giantswarm/micrologger v0.5.0
+	github.com/giantswarm/microendpoint v1.0.0
+	github.com/giantswarm/microerror v0.4.0
+	github.com/giantswarm/microkit v1.0.0
+	github.com/giantswarm/micrologger v0.6.0
 	github.com/giantswarm/operatorkit/v2 v2.0.2
 	github.com/giantswarm/statusresource/v2 v2.0.0
-	github.com/giantswarm/versionbundle v0.2.0
+	github.com/giantswarm/versionbundle v1.0.0
 	github.com/google/go-cmp v0.5.6
 	github.com/prometheus/client_golang v1.11.0
-	github.com/spf13/viper v1.8.1
+	github.com/spf13/viper v1.10.0
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	k8s.io/api v0.18.19
 	k8s.io/apimachinery v0.18.19
