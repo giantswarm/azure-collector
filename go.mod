@@ -19,7 +19,7 @@ require (
 	github.com/giantswarm/statusresource/v2 v2.0.0
 	github.com/giantswarm/versionbundle v1.0.0
 	github.com/google/go-cmp v0.5.7
-	github.com/prometheus/client_golang v1.12.0
+	github.com/prometheus/client_golang v1.12.1
 	github.com/spf13/viper v1.10.1
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	k8s.io/api v0.18.19
@@ -27,7 +27,7 @@ require (
 	k8s.io/client-go v0.18.19
 	sigs.k8s.io/cluster-api v0.4.0
 	sigs.k8s.io/cluster-api-provider-azure v0.4.15
-	sigs.k8s.io/controller-runtime v0.6.4
+	sigs.k8s.io/controller-runtime v0.6.5
 )
 
 require (
