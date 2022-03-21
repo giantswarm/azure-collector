@@ -42,3 +42,6 @@ provider:
     sptenantID: ""
     subscriptionID: ""
     tenantID: ""
+
+verticalPodAutoscaler:
+  enabled: true
