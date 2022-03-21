@@ -6,7 +6,7 @@ metadata:
   name: {{ tpl .Values.resource.default.name  . }}
   namespace: {{ tpl .Values.resource.default.namespace  . }}
   labels:
-    {{- include "labels.common" . | nindent 4 }}
+    {{- include "azure-collector.labels" . | nindent 4 }}
 spec:
   resourcePolicy:
     containerPolicies:
