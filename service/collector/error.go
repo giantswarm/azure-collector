@@ -2,8 +2,10 @@ package collector
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/adal"
 	"github.com/giantswarm/microerror"
 )
 
@@ -28,6 +30,48 @@ func IsThrottlingError(err error) bool {
 		dErr, ok := c.(autorest.DetailedError)
 		if ok {
 			if dErr.StatusCode == http.StatusTooManyRequests {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// IsCredentialsExpiredError asserts credentials expired error.
+func IsCredentialsExpiredError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	c := microerror.Cause(err)
+
+	{
+		dErr, ok := c.(autorest.DetailedError)
+		if ok {
+			oErr, ok := dErr.Original.(adal.TokenRefreshError)
+			if ok {
+				body := oErr.Error()
+				return strings.Index(string(body), "are expired") > 0
+			}
+		}
+	}
+
+	return false
+}
+
+// IsForbiddenError asserts unauthorized error.
+func IsForbiddenError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	c := microerror.Cause(err)
+
+	{
+		dErr, ok := c.(autorest.DetailedError)
+		if ok {
+			if dErr.StatusCode == http.StatusForbidden {
 				return true
 			}
 		}

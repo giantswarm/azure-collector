@@ -19,6 +19,7 @@ const (
 	labelTenantId        = "tenant_id"
 	labelApplicationId   = "application_id"
 	labelApplicationName = "application_name"
+	labelFailureReason   = "reason"
 	labelSecretKeyID     = "secret_key_id"
 )
 
@@ -44,6 +45,7 @@ var (
 			labelClientId,
 			labelSubscriptionId,
 			labelTenantId,
+			labelFailureReason,
 		},
 		nil,
 	)
@@ -96,15 +98,33 @@ func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 		return nil
 	}
 
-	failedScrapes := make(map[string]*client.AzureClientSetConfig)
+	type scrapeErrorWithReason struct {
+		AzureClientSetConfig *client.AzureClientSetConfig
+		Reason               string
+	}
+
+	failedScrapes := make(map[string]scrapeErrorWithReason)
+
+	fmt.Printf("There are %d client sets\n", len(azureClientSets))
 
 	// Use one arbitrary client set (we don't care which one) and use it to list all service principals on the GiantSwarm Active Directory.
 	for azureClientSetConfig, clientSet := range azureClientSets {
 		apps, err := clientSet.ApplicationsClient.ListComplete(ctx, "")
 		if err != nil {
+			reason := "unknown"
+			// Catch if error message contains 'is expired' as that means the credentials are, well, expired.
+			if IsCredentialsExpiredError(err) {
+				reason = "expired"
+			} else if IsForbiddenError(err) {
+				reason = "forbidden"
+			}
+
 			// Ignore but log
 			v.logger.LogCtx(ctx, "level", "warning", "message", fmt.Sprintf("Unable to list applications using client %#q", azureClientSetConfig.ClientID), "stack", microerror.JSON(err), "gsTenantID", v.gsTenantID)
-			failedScrapes[azureClientSetConfig.ClientID] = azureClientSetConfig
+			failedScrapes[azureClientSetConfig.ClientID] = scrapeErrorWithReason{
+				AzureClientSetConfig: azureClientSetConfig,
+				Reason:               reason,
+			}
 			continue
 		}
 
@@ -134,14 +154,15 @@ func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 	}
 
 	// Send metrics for failed scrapes as well
-	for _, azureClientSetConfig := range failedScrapes {
+	for _, failedScrape := range failedScrapes {
 		ch <- prometheus.MustNewConstMetric(
 			spExpirationFailedScrapeDesc,
 			prometheus.GaugeValue,
 			float64(1),
-			azureClientSetConfig.ClientID,
-			azureClientSetConfig.SubscriptionID,
-			azureClientSetConfig.TenantID,
+			failedScrape.AzureClientSetConfig.ClientID,
+			failedScrape.AzureClientSetConfig.SubscriptionID,
+			failedScrape.AzureClientSetConfig.TenantID,
+			failedScrape.Reason,
 		)
 	}
 
