@@ -5,6 +5,8 @@ import (
 	"github.com/giantswarm/k8sclient/v4/pkg/k8sclient"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
+
+	"github.com/giantswarm/azure-collector/v2/service/collector/cluster"
 )
 
 const (
@@ -32,119 +34,119 @@ func NewSet(config SetConfig) (*Set, error) {
 	var err error
 	var collectors []collector.Interface
 
-	//{
-	//	clusterCollectors, err := cluster.NewCollectors(config.K8sClient.CtrlClient(), config.Logger)
-	//	if err != nil {
-	//		return nil, microerror.Mask(err)
-	//	}
-	//
-	//	conditions, err := cluster.NewConditions(config.K8sClient.CtrlClient(), config.Logger)
-	//	if err != nil {
-	//		return nil, microerror.Mask(err)
-	//	}
-	//
-	//	nodepools, err := cluster.NewNodePools(config.K8sClient.CtrlClient(), config.Logger)
-	//	if err != nil {
-	//		return nil, microerror.Mask(err)
-	//	}
-	//
-	//	releases, err := cluster.NewReleases(config.K8sClient.CtrlClient(), config.Logger)
-	//	if err != nil {
-	//		return nil, microerror.Mask(err)
-	//	}
-	//
-	//	transition, err := cluster.NewTransitionTime(config.K8sClient.CtrlClient(), config.Logger)
-	//	if err != nil {
-	//		return nil, microerror.Mask(err)
-	//	}
-	//
-	//	clusterCollectors.Add(conditions)
-	//	clusterCollectors.Add(nodepools)
-	//	clusterCollectors.Add(releases)
-	//	clusterCollectors.Add(transition)
-	//	collectors = append(collectors, clusterCollectors)
-	//}
-	//
-	//{
-	//	c := DeploymentConfig{
-	//		G8sClient:  config.K8sClient.G8sClient(),
-	//		K8sClient:  config.K8sClient.K8sClient(),
-	//		Logger:     config.Logger,
-	//		GSTenantID: config.GSTenantID,
-	//	}
-	//
-	//	deploymentCollector, err := NewDeployment(c)
-	//	if err != nil {
-	//		return nil, microerror.Mask(err)
-	//	}
-	//
-	//	collectors = append(collectors, deploymentCollector)
-	//}
-	//
-	//{
-	//	c := LoadBalancerConfig{
-	//		G8sClient:  config.K8sClient.G8sClient(),
-	//		K8sClient:  config.K8sClient.K8sClient(),
-	//		Logger:     config.Logger,
-	//		GSTenantID: config.GSTenantID,
-	//	}
-	//
-	//	loadBalancerCollector, err := NewLoadBalancer(c)
-	//	if err != nil {
-	//		return nil, microerror.Mask(err)
-	//	}
-	//
-	//	collectors = append(collectors, loadBalancerCollector)
-	//}
-	//
-	//{
-	//	c := ResourceGroupConfig{
-	//		K8sClient:  config.K8sClient.K8sClient(),
-	//		Logger:     config.Logger,
-	//		GSTenantID: config.GSTenantID,
-	//	}
-	//
-	//	resourceGroupCollector, err := NewResourceGroup(c)
-	//	if err != nil {
-	//		return nil, microerror.Mask(err)
-	//	}
-	//
-	//	collectors = append(collectors, resourceGroupCollector)
-	//}
-	//
-	//{
-	//	c := UsageConfig{
-	//		G8sClient:  config.K8sClient.G8sClient(),
-	//		K8sClient:  config.K8sClient.K8sClient(),
-	//		Logger:     config.Logger,
-	//		Location:   config.Location,
-	//		GSTenantID: config.GSTenantID,
-	//	}
-	//
-	//	usageCollector, err := NewUsage(c)
-	//	if err != nil {
-	//		return nil, microerror.Mask(err)
-	//	}
-	//
-	//	collectors = append(collectors, usageCollector)
-	//}
-	//
-	//{
-	//	c := RateLimitConfig{
-	//		G8sClient:  config.K8sClient.G8sClient(),
-	//		K8sClient:  config.K8sClient.K8sClient(),
-	//		Location:   config.Location,
-	//		Logger:     config.Logger,
-	//		GSTenantID: config.GSTenantID,
-	//	}
-	//
-	//	rateLimitCollector, err := NewRateLimit(c)
-	//	if err != nil {
-	//		return nil, microerror.Mask(err)
-	//	}
-	//
-	//	collectors = append(collectors, rateLimitCollector)
-	//}
+	{
+		clusterCollectors, err := cluster.NewCollectors(config.K8sClient.CtrlClient(), config.Logger)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		conditions, err := cluster.NewConditions(config.K8sClient.CtrlClient(), config.Logger)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		nodepools, err := cluster.NewNodePools(config.K8sClient.CtrlClient(), config.Logger)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		releases, err := cluster.NewReleases(config.K8sClient.CtrlClient(), config.Logger)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		transition, err := cluster.NewTransitionTime(config.K8sClient.CtrlClient(), config.Logger)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		clusterCollectors.Add(conditions)
+		clusterCollectors.Add(nodepools)
+		clusterCollectors.Add(releases)
+		clusterCollectors.Add(transition)
+		collectors = append(collectors, clusterCollectors)
+	}
+
+	{
+		c := DeploymentConfig{
+			G8sClient:  config.K8sClient.G8sClient(),
+			K8sClient:  config.K8sClient.K8sClient(),
+			Logger:     config.Logger,
+			GSTenantID: config.GSTenantID,
+		}
+
+		deploymentCollector, err := NewDeployment(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		collectors = append(collectors, deploymentCollector)
+	}
+
+	{
+		c := LoadBalancerConfig{
+			G8sClient:  config.K8sClient.G8sClient(),
+			K8sClient:  config.K8sClient.K8sClient(),
+			Logger:     config.Logger,
+			GSTenantID: config.GSTenantID,
+		}
+
+		loadBalancerCollector, err := NewLoadBalancer(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		collectors = append(collectors, loadBalancerCollector)
+	}
+
+	{
+		c := ResourceGroupConfig{
+			K8sClient:  config.K8sClient.K8sClient(),
+			Logger:     config.Logger,
+			GSTenantID: config.GSTenantID,
+		}
+
+		resourceGroupCollector, err := NewResourceGroup(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		collectors = append(collectors, resourceGroupCollector)
+	}
+
+	{
+		c := UsageConfig{
+			G8sClient:  config.K8sClient.G8sClient(),
+			K8sClient:  config.K8sClient.K8sClient(),
+			Logger:     config.Logger,
+			Location:   config.Location,
+			GSTenantID: config.GSTenantID,
+		}
+
+		usageCollector, err := NewUsage(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		collectors = append(collectors, usageCollector)
+	}
+
+	{
+		c := RateLimitConfig{
+			G8sClient:  config.K8sClient.G8sClient(),
+			K8sClient:  config.K8sClient.K8sClient(),
+			Location:   config.Location,
+			Logger:     config.Logger,
+			GSTenantID: config.GSTenantID,
+		}
+
+		rateLimitCollector, err := NewRateLimit(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		collectors = append(collectors, rateLimitCollector)
+	}
 
 	{
 		if config.GSTenantID == gsTenantID {
@@ -163,37 +165,37 @@ func NewSet(config SetConfig) (*Set, error) {
 		}
 	}
 
-	//{
-	//	c := VMSSRateLimitConfig{
-	//		CtrlClient: config.K8sClient.CtrlClient(),
-	//		Logger:     config.Logger,
-	//		GSTenantID: config.GSTenantID,
-	//	}
-	//
-	//	vmssRateLimitCollector, err := NewVMSSRateLimit(c)
-	//	if err != nil {
-	//		return nil, microerror.Mask(err)
-	//	}
-	//
-	//	collectors = append(collectors, vmssRateLimitCollector)
-	//}
-	//
-	//{
-	//	c := VPNConnectionConfig{
-	//		G8sClient:        config.K8sClient.G8sClient(),
-	//		InstallationName: config.ControlPlaneResourceGroup,
-	//		K8sClient:        config.K8sClient.K8sClient(),
-	//		Logger:           config.Logger,
-	//		GSTenantID:       config.GSTenantID,
-	//	}
-	//
-	//	vpnConnectionCollector, err := NewVPNConnection(c)
-	//	if err != nil {
-	//		return nil, microerror.Mask(err)
-	//	}
-	//
-	//	collectors = append(collectors, vpnConnectionCollector)
-	//}
+	{
+		c := VMSSRateLimitConfig{
+			CtrlClient: config.K8sClient.CtrlClient(),
+			Logger:     config.Logger,
+			GSTenantID: config.GSTenantID,
+		}
+
+		vmssRateLimitCollector, err := NewVMSSRateLimit(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		collectors = append(collectors, vmssRateLimitCollector)
+	}
+
+	{
+		c := VPNConnectionConfig{
+			G8sClient:        config.K8sClient.G8sClient(),
+			InstallationName: config.ControlPlaneResourceGroup,
+			K8sClient:        config.K8sClient.K8sClient(),
+			Logger:           config.Logger,
+			GSTenantID:       config.GSTenantID,
+		}
+
+		vpnConnectionCollector, err := NewVPNConnection(c)
+		if err != nil {
+			return nil, microerror.Mask(err)
+		}
+
+		collectors = append(collectors, vpnConnectionCollector)
+	}
 
 	var collectorSet *collector.Set
 	{
