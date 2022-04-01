@@ -105,8 +105,6 @@ func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 
 	failedScrapes := make(map[string]scrapeErrorWithReason)
 
-	fmt.Printf("There are %d client sets\n", len(azureClientSets))
-
 	// Use one arbitrary client set (we don't care which one) and use it to list all service principals on the GiantSwarm Active Directory.
 	for azureClientSetConfig, clientSet := range azureClientSets {
 		apps, err := clientSet.ApplicationsClient.ListComplete(ctx, "")
