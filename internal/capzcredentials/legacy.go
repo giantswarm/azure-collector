@@ -13,7 +13,7 @@ import (
 
 const (
 	credentialDefaultNamespace = "giantswarm"
-	credentialDefaultName      = "credential-default"
+	credentialDefaultName      = "credential-default" // nolint:gosec
 
 	clientIDKey       = "azure.azureoperator.clientid"
 	clientSecretKey   = "azure.azureoperator.clientsecret"
