@@ -21,7 +21,7 @@ const (
 	SubscriptionIDKey   = "azure.azureoperator.subscriptionid"
 	TenantIDKey         = "azure.azureoperator.tenantid"
 	PartnerIDKey        = "azure.azureoperator.partnerid"
-	SecretLabel         = "app=credentiald"
+	SecretLabel         = "app=credentiald" // nolint:gosec
 	CredentialNamespace = "giantswarm"
 	CredentialDefault   = "credential-default"
 	SingleTenantSP      = "giantswarm.io/single-tenant-service-principal"
