@@ -21,7 +21,7 @@ const (
 	SubscriptionIDKey   = "azure.azureoperator.subscriptionid"
 	TenantIDKey         = "azure.azureoperator.tenantid"
 	PartnerIDKey        = "azure.azureoperator.partnerid"
-	SecretLabel         = "giantswarm.io/managed-by=credentiald"
+	SecretLabel         = "app=credentiald"
 	CredentialNamespace = "giantswarm"
 	CredentialDefault   = "credential-default"
 	SingleTenantSP      = "giantswarm.io/single-tenant-service-principal"
@@ -178,7 +178,7 @@ func GetCredentialSecrets(ctx context.Context, k8sClient kubernetes.Interface) (
 			Continue:      mark,
 			LabelSelector: SecretLabel,
 		}
-		list, err := k8sClient.CoreV1().Secrets(CredentialNamespace).List(ctx, opts)
+		list, err := k8sClient.CoreV1().Secrets("").List(ctx, opts)
 		if err != nil {
 			return secrets, microerror.Mask(err)
 		}
