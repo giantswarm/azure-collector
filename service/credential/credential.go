@@ -16,15 +16,13 @@ import (
 )
 
 const (
-	ClientIDKey         = "azure.azureoperator.clientid"
-	ClientSecretKey     = "azure.azureoperator.clientsecret"
-	SubscriptionIDKey   = "azure.azureoperator.subscriptionid"
-	TenantIDKey         = "azure.azureoperator.tenantid"
-	PartnerIDKey        = "azure.azureoperator.partnerid"
-	SecretLabel         = "app=credentiald" // nolint:gosec
-	CredentialNamespace = "giantswarm"
-	CredentialDefault   = "credential-default"
-	SingleTenantSP      = "giantswarm.io/single-tenant-service-principal"
+	ClientIDKey       = "azure.azureoperator.clientid"
+	ClientSecretKey   = "azure.azureoperator.clientsecret"
+	SubscriptionIDKey = "azure.azureoperator.subscriptionid"
+	TenantIDKey       = "azure.azureoperator.tenantid"
+	PartnerIDKey      = "azure.azureoperator.partnerid"
+	SecretLabel       = "app=credentiald" // nolint:gosec
+	SingleTenantSP    = "giantswarm.io/single-tenant-service-principal"
 )
 
 func GetAzureConfigFromSecretName(ctx context.Context, k8sClient kubernetes.Interface, name, namespace, gsTenantID string) (*client.AzureClientSetConfig, error) {

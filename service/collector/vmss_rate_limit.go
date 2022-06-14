@@ -39,7 +39,7 @@ const (
 	vmssMetricsSubsystem = "rate_limit"
 
 	credentialDefaultNamespace = "giantswarm"
-	credentialDefaultName      = "credential-default"
+	credentialDefaultName      = "credential-default" // nolint:gosec
 )
 
 var (
