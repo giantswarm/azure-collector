@@ -5,6 +5,11 @@ metadata:
   namespace: {{ tpl .Values.resource.default.namespace  . }}
   labels:
     {{- include "azure-collector.labels" . | nindent 4 }}
+{{- if not (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1") }}
+    giantswarm.io/monitoring: "true"
+  annotations:
+    prometheus.io/scrape: "true"
+{{- end }}
 spec:
   type: NodePort
   ports:
