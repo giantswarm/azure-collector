@@ -5,6 +5,7 @@ metadata:
   namespace: {{ tpl .Values.resource.default.namespace  . }}
   labels:
     {{- include "azure-collector.labels" . | nindent 4 }}
+    giantswarm.io/monitoring: "true"
   annotations:
     prometheus.io/scrape: "true"
 spec:
