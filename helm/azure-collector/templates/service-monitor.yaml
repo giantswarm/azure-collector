@@ -1,0 +1,15 @@
+{{- if .Capabilities.APIVersions.Has "monitoring.coreos.com/v1" }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ tpl .Values.resource.default.name  . }}
+  namespace: {{ tpl .Values.resource.default.namespace  . }}
+  labels:
+    {{- include "azure-collector.labels" . | nindent 4 }}
+spec:
+  endpoints:
+    - port: web
+  selector:
+    matchLabels:
+      {{- include "azure-collector.selectorLabels" . | nindent 6 }}
+{{- end }}

@@ -5,11 +5,10 @@ metadata:
   namespace: {{ tpl .Values.resource.default.namespace  . }}
   labels:
     {{- include "azure-collector.labels" . | nindent 4 }}
-  annotations:
-    prometheus.io/scrape: "true"
 spec:
   type: NodePort
   ports:
-  - port: 8000
+  - name: web
+    port: 8000
   selector:
     {{- include "azure-collector.selectorLabels" . | nindent 4 }}
