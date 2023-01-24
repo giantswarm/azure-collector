@@ -45,3 +45,13 @@ provider:
 
 verticalPodAutoscaler:
   enabled: true
+
+# Add seccomp to pod security context
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+# Add seccomp to container security context
+securityContext:
+  seccompProfile:
+    type: RuntimeDefault
