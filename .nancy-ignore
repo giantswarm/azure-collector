@@ -17,3 +17,16 @@ sonatype-2020-0921 until=2024-03-14
 sonatype-2020-1258 until=2024-03-14
 sonatype-2019-0890 until=2024-03-14
 sonatype-2021-1485 until=2024-03-14
+
+# caddyserver/caddy 1.0.3
+CVE-2022-29718 until=2024-03-14
+
+# kataras/iris v12.0.1
+CVE-2021-23772 until=2024-03-14
+
+# nats-io/jwt v0.3.2
+CVE-2020-26892 until=2024-03-14
+CVE-2021-3127 until=2024-03-14
+
+# mongo-driver
+# CVE-2021-20329
