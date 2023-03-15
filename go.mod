@@ -115,9 +115,6 @@ require (
 )
 
 replace (
-	// github.com/coreos/etcd v3.3.10+incompatible => github.com/coreos/etcd v3.3.24+incompatible
-	// github.com/coreos/etcd v3.3.13+incompatible => github.com/coreos/etcd v3.3.24+incompatible
-	// github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
 	github.com/gin-gonic/gin v1.4.0 => github.com/gin-gonic/gin v1.9.0
 	github.com/gorilla/websocket v1.4.0 => github.com/gorilla/websocket v1.4.2
 	github.com/labstack/echo/v4 v4.1.11 => github.com/labstack/echo/v4 v4.10.2
@@ -125,24 +122,6 @@ replace (
 	github.com/microcosm-cc/bluemonday v1.0.2 => github.com/microcosm-cc/bluemonday v1.0.23
 	github.com/nats-io/nats-server/v2 v2.5.0 => github.com/nats-io/nats-server/v2 v2.9.15
 	github.com/valyala/fasthttp v1.6.0 => github.com/valyala/fasthttp v1.45.0
-	// github.com/gogo/protobuf v1.3.1 => github.com/gogo/protobuf v1.3.2
 	go.mongodb.org/mongo-driver v1.1.2 => go.mongodb.org/mongo-driver v1.11.2
 	sigs.k8s.io/cluster-api => github.com/giantswarm/cluster-api v0.3.13-gs
 )
-
-// replace (
-// 	xgithub.com/caddyserver/caddy v1.0.3 => github.com/caddyserver/caddy/v2 v2.6.4
-// 	github.com/gin-gonic/gin v1.4.0 => github.com/gin-gonic/gin v1.9.0
-// 	// github.com/coreos/etcd v3.3.10+incompatible => github.com/coreos/etcd v3.3.24+incompatible
-// 	// github.com/coreos/etcd v3.3.13+incompatible => github.com/coreos/etcd v3.3.24+incompatible
-// 	// github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
-// 	// github.com/gogo/protobuf v1.3.1 => github.com/gogo/protobuf v1.3.2
-// 	github.com/gorilla/websocket v1.4.0 => github.com/gorilla/websocket v1.4.2
-// 	// github.com/kataras/iris/v12 v12.0.1 => github.com/kataras/iris/v12 v12.1.8
-// 	github.com/labstack/echo/v4 v4.1.11 => github.com/labstack/echo/v4 v4.10.2
-// 	github.com/lucas-clemente/quic-go v0.10.2 => github.com/quic-go/quic-go v0.33.0
-// 	github.com/microcosm-cc/bluemonday v1.0.2 => github.com/microcosm-cc/bluemonday v1.0.23
-// 	github.com/nats-io/nats-server/v2 v2.5.0 => github.com/nats-io/nats-server/v2 v2.9.15
-// 	github.com/valyala/fasthttp v1.6.0 => github.com/valyala/fasthttp v1.45.0
-// 	sigs.k8s.io/cluster-api => github.com/giantswarm/cluster-api v0.3.13-gs
-// )
