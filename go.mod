@@ -115,11 +115,7 @@ require (
 )
 
 replace (
-	github.com/coreos/etcd v3.3.10+incompatible => github.com/coreos/etcd v3.3.24+incompatible
-	github.com/coreos/etcd v3.3.13+incompatible => github.com/coreos/etcd v3.3.24+incompatible
-	github.com/dgrijalva/jwt-go => github.com/dgrijalva/jwt-go/v4 v4.0.0-preview1
-	github.com/gogo/protobuf v1.3.1 => github.com/gogo/protobuf v1.3.2
-	github.com/gorilla/websocket => github.com/gorilla/websocket v1.4.2
+	github.com/gorilla/websocket v1.4.0 => github.com/gorilla/websocket v1.4.2
 	github.com/labstack/echo/v4 v4.1.11 => github.com/labstack/echo/v4 v4.10.2
 	github.com/lucas-clemente/quic-go v0.10.2 => github.com/quic-go/quic-go v0.33.0
 	github.com/nats-io/nats-server/v2 v2.5.0 => github.com/nats-io/nats-server/v2 v2.9.15
