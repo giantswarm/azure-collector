@@ -22,9 +22,9 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/spf13/viper v1.15.0
 	golang.org/x/sync v0.1.0
-	k8s.io/api v0.18.19
-	k8s.io/apimachinery v0.18.19
-	k8s.io/client-go v0.18.19
+	k8s.io/api v0.20.0
+	k8s.io/apimachinery v0.20.0
+	k8s.io/client-go v0.20.0
 	sigs.k8s.io/cluster-api v0.4.0
 	sigs.k8s.io/cluster-api-provider-azure v0.4.15
 	sigs.k8s.io/controller-runtime v0.6.5
@@ -55,7 +55,7 @@ require (
 	github.com/go-kit/kit v0.12.0 // indirect
 	github.com/go-kit/log v0.2.0 // indirect
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
-	github.com/go-logr/logr v0.1.0 // indirect
+	github.com/go-logr/logr v0.2.0 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/gobuffalo/flect v0.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -64,7 +64,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.1.2 // indirect
-	github.com/googleapis/gnostic v0.3.1 // indirect
+	github.com/googleapis/gnostic v0.4.1 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
@@ -107,10 +107,10 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/apiextensions-apiserver v0.18.9 // indirect
 	k8s.io/klog v1.0.0 // indirect
-	k8s.io/klog/v2 v2.0.0 // indirect
-	k8s.io/kube-openapi v0.0.0-20200410145947-bcb3869e6f29 // indirect
+	k8s.io/klog/v2 v2.4.0 // indirect
+	k8s.io/kube-openapi v0.0.0-20201113171705-d219536bb9fd // indirect
 	k8s.io/utils v0.0.0-20201110183641-67b214c5f920 // indirect
-	sigs.k8s.io/structured-merge-diff/v3 v3.0.1 // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.0.2 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
