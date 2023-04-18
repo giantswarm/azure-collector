@@ -4,18 +4,19 @@ import (
 	"context"
 	"sync"
 
-	"github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
-	"github.com/giantswarm/k8sclient/v4/pkg/k8sclient"
-	"github.com/giantswarm/k8sclient/v4/pkg/k8srestconfig"
+	"github.com/giantswarm/apiextensions/v6/pkg/apis/provider/v1alpha1"
+	"github.com/giantswarm/k8sclient/v7/pkg/k8sclient"
+	"github.com/giantswarm/k8sclient/v7/pkg/k8srestconfig"
 	"github.com/giantswarm/microendpoint/service/version"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
-	"github.com/giantswarm/statusresource/v2"
+	"github.com/giantswarm/statusresource/v5"
 	"github.com/giantswarm/versionbundle"
 	"github.com/spf13/viper"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiexpv1alpha3 "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
 
 	"github.com/giantswarm/azure-collector/v2/flag"
@@ -108,7 +109,7 @@ func New(config Config) (*Service, error) {
 			Logger: config.Logger,
 			SchemeBuilder: k8sclient.SchemeBuilder{
 				v1alpha1.AddToScheme,
-				capiv1alpha3.AddToScheme,
+				capiv1beta1.AddToScheme,
 				capiexpv1alpha3.AddToScheme,
 				capzv1alpha3.AddToScheme,
 			},
@@ -141,9 +142,11 @@ func New(config Config) (*Service, error) {
 
 	var statusResourceCollector *statusresource.CollectorSet
 	{
+		var appResource = schema.GroupVersionResource{Group: "provider.giantswarm.io", Version: "v1alpha1", Resource: "azureconfigs"}
+
 		c := statusresource.CollectorSetConfig{
 			Logger:  config.Logger,
-			Watcher: k8sClient.G8sClient().ProviderV1alpha1().AzureConfigs("").Watch,
+			Watcher: k8sClient.DynClient().Resource(appResource).Watch,
 		}
 
 		statusResourceCollector, err = statusresource.NewCollectorSet(c)

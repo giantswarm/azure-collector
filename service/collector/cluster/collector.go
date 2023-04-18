@@ -7,7 +7,7 @@ import (
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -44,7 +44,7 @@ func (c *Collectors) Add(cc ClusterCollector) {
 
 func (c *Collectors) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
-	clusters := &capiv1alpha3.ClusterList{}
+	clusters := &capiv1beta1.ClusterList{}
 	{
 		err := c.ctrlClient.List(ctx, clusters, client.InNamespace(metav1.NamespaceAll))
 		if err != nil {
