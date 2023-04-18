@@ -3,11 +3,10 @@ package collector
 import (
 	"context"
 
-	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-collector/v2/service/credential"
 )
@@ -26,26 +25,21 @@ var (
 )
 
 type LoadBalancerConfig struct {
-	G8sClient  versioned.Interface
-	K8sClient  kubernetes.Interface
+	CtrlClient client.Client
 	Logger     micrologger.Logger
 	GSTenantID string
 }
 
 type LoadBalancer struct {
-	g8sClient  versioned.Interface
-	k8sClient  kubernetes.Interface
+	ctrlClient client.Client
 	logger     micrologger.Logger
 	gsTenantID string
 }
 
 // NewLoadBalancer exposes metrics about the 'kubernetes' load balancer used to Kubernetes services with type LoadBalancer.
 func NewLoadBalancer(config LoadBalancerConfig) (*LoadBalancer, error) {
-	if config.G8sClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.G8sClient must not be empty", config)
-	}
-	if config.K8sClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.K8sClient must not be empty", config)
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
 	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
@@ -55,8 +49,7 @@ func NewLoadBalancer(config LoadBalancerConfig) (*LoadBalancer, error) {
 	}
 
 	d := &LoadBalancer{
-		g8sClient:  config.G8sClient,
-		k8sClient:  config.K8sClient,
+		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,
 		gsTenantID: config.GSTenantID,
 	}
@@ -66,7 +59,7 @@ func NewLoadBalancer(config LoadBalancerConfig) (*LoadBalancer, error) {
 
 func (d *LoadBalancer) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
-	azureClientSets, err := credential.GetAzureClientSetsByCluster(ctx, d.k8sClient, d.g8sClient, d.gsTenantID)
+	azureClientSets, err := credential.GetAzureClientSetsByCluster(ctx, d.ctrlClient, d.gsTenantID)
 	if err != nil {
 		return microerror.Mask(err)
 	}
