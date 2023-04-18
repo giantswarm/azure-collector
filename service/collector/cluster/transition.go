@@ -3,12 +3,12 @@ package cluster
 import (
 	"context"
 
-	"github.com/giantswarm/apiextensions/v2/pkg/label"
-	aeconditions "github.com/giantswarm/apiextensions/v3/pkg/conditions"
+	aeconditions "github.com/giantswarm/apiextensions/v6/pkg/conditions"
+	"github.com/giantswarm/apiextensions/v6/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/cluster-api/util/conditions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -46,7 +46,7 @@ func NewTransitionTime(ctrlClient client.Client, logger micrologger.Logger) (*Tr
 	return u, nil
 }
 
-func (t *TransitionTime) Collect(ctx context.Context, cluster *capiv1alpha3.Cluster, ch chan<- prometheus.Metric) error {
+func (t *TransitionTime) Collect(ctx context.Context, cluster *capiv1beta1.Cluster, ch chan<- prometheus.Metric) error {
 	releaseVersion, ok := cluster.Labels[label.ReleaseVersion]
 	if !ok {
 		t.logger.Debugf(ctx, "Cluster %#q has no %#q label. Skipping", cluster.Name, label.ReleaseVersion)

@@ -3,11 +3,11 @@ package cluster
 import (
 	"context"
 
-	"github.com/giantswarm/apiextensions/v2/pkg/label"
+	"github.com/giantswarm/apiextensions/v6/pkg/label"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
-	capiv1alpha3 "sigs.k8s.io/cluster-api/api/v1alpha3"
+	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -44,7 +44,7 @@ func NewReleases(ctrlClient client.Client, logger micrologger.Logger) (*Releases
 	return c, nil
 }
 
-func (c *Releases) Collect(ctx context.Context, cluster *capiv1alpha3.Cluster, ch chan<- prometheus.Metric) error {
+func (c *Releases) Collect(ctx context.Context, cluster *capiv1beta1.Cluster, ch chan<- prometheus.Metric) error {
 	releaseVersion, ok := cluster.Labels[label.ReleaseVersion]
 	if !ok {
 		c.logger.Debugf(ctx, "Cluster %#q has no %#q label. Skipping", cluster.Name, label.ReleaseVersion)
