@@ -69,8 +69,7 @@ func NewSet(config SetConfig) (*Set, error) {
 
 	{
 		c := DeploymentConfig{
-			G8sClient:  config.K8sClient.G8sClient(),
-			K8sClient:  config.K8sClient.K8sClient(),
+			CtrlClient: config.K8sClient.CtrlClient(),
 			Logger:     config.Logger,
 			GSTenantID: config.GSTenantID,
 		}
@@ -85,8 +84,7 @@ func NewSet(config SetConfig) (*Set, error) {
 
 	{
 		c := LoadBalancerConfig{
-			G8sClient:  config.K8sClient.G8sClient(),
-			K8sClient:  config.K8sClient.K8sClient(),
+			CtrlClient: config.K8sClient.CtrlClient(),
 			Logger:     config.Logger,
 			GSTenantID: config.GSTenantID,
 		}
@@ -182,9 +180,8 @@ func NewSet(config SetConfig) (*Set, error) {
 
 	{
 		c := VPNConnectionConfig{
-			G8sClient:        config.K8sClient.G8sClient(),
+			CtrlClient:       config.K8sClient.CtrlClient(),
 			InstallationName: config.ControlPlaneResourceGroup,
-			K8sClient:        config.K8sClient.K8sClient(),
 			Logger:           config.Logger,
 			GSTenantID:       config.GSTenantID,
 		}

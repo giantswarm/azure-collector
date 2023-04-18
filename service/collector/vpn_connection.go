@@ -4,12 +4,11 @@ import (
 	"context"
 
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
-	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-collector/v2/service/credential"
 )
@@ -31,30 +30,25 @@ var (
 )
 
 type VPNConnectionConfig struct {
-	G8sClient        versioned.Interface
+	CtrlClient       client.Client
 	InstallationName string
-	K8sClient        kubernetes.Interface
 	Logger           micrologger.Logger
 	GSTenantID       string
 }
 
 type VPNConnection struct {
-	g8sClient        versioned.Interface
+	ctrlClient       client.Client
 	installationName string
-	k8sClient        kubernetes.Interface
 	logger           micrologger.Logger
 	gsTenantID       string
 }
 
 func NewVPNConnection(config VPNConnectionConfig) (*VPNConnection, error) {
-	if config.G8sClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.G8sClient must not be empty", config)
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
 	}
 	if config.InstallationName == "" {
 		return nil, microerror.Maskf(invalidConfigError, "%T.InstallationName must not be empty", config)
-	}
-	if config.K8sClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.K8sClient must not be empty", config)
 	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
@@ -64,9 +58,8 @@ func NewVPNConnection(config VPNConnectionConfig) (*VPNConnection, error) {
 	}
 
 	v := &VPNConnection{
-		g8sClient:        config.G8sClient,
+		ctrlClient:       config.CtrlClient,
 		installationName: config.InstallationName,
-		k8sClient:        config.K8sClient,
 		logger:           config.Logger,
 		gsTenantID:       config.GSTenantID,
 	}
@@ -77,7 +70,7 @@ func NewVPNConnection(config VPNConnectionConfig) (*VPNConnection, error) {
 func (v *VPNConnection) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
-	azureClientSets, err := credential.GetAzureClientSetsByCluster(ctx, v.k8sClient, v.g8sClient, v.gsTenantID)
+	azureClientSets, err := credential.GetAzureClientSetsByCluster(ctx, v.ctrlClient, v.gsTenantID)
 	if err != nil {
 		return microerror.Mask(err)
 	}

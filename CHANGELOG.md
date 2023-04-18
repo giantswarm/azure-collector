@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Use CtrlClient instead of typed clients.
+
 ## [2.13.0] - 2023-04-05
 
 ### Changed

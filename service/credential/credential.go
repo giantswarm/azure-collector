@@ -5,11 +5,11 @@ import (
 
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
-	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
 	"github.com/giantswarm/microerror"
 	v1 "k8s.io/api/core/v1"
 	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-collector/v2/client"
 	"github.com/giantswarm/azure-collector/v2/service/collector/key"
@@ -25,8 +25,9 @@ const (
 	SingleTenantSP    = "giantswarm.io/single-tenant-service-principal"
 )
 
-func GetAzureConfigFromSecretName(ctx context.Context, k8sClient kubernetes.Interface, name, namespace, gsTenantID string) (*client.AzureClientSetConfig, error) {
-	credential, err := k8sClient.CoreV1().Secrets(namespace).Get(ctx, name, apismetav1.GetOptions{})
+func GetAzureConfigFromSecretName(ctx context.Context, ctrlClient ctrlclient.Client, name, namespace, gsTenantID string) (*client.AzureClientSetConfig, error) {
+	credential := &v1.Secret{}
+	err := ctrlClient.Get(ctx, ctrlclient.ObjectKey{Namespace: namespace, Name: name}, credential)
 	if err != nil {
 		return nil, microerror.Mask(err)
 	}
@@ -131,17 +132,18 @@ func GetAzureClientSetsFromCredentialSecretsBySubscription(ctx context.Context, 
 	return azureClientSets, nil
 }
 
-func GetAzureClientSetsByCluster(ctx context.Context, k8sclient kubernetes.Interface, g8sclient versioned.Interface, gsTenantID string) (map[string]*client.AzureClientSet, error) {
+func GetAzureClientSetsByCluster(ctx context.Context, ctrlClient ctrlclient.Client, gsTenantID string) (map[string]*client.AzureClientSet, error) {
 	azureClientSets := map[string]*client.AzureClientSet{}
 	var crs []providerv1alpha1.AzureConfig
 	{
 		mark := ""
 		page := 0
 		for page == 0 || len(mark) > 0 {
-			opts := apismetav1.ListOptions{
+			opts := ctrlclient.ListOptions{
 				Continue: mark,
 			}
-			list, err := g8sclient.ProviderV1alpha1().AzureConfigs(apismetav1.NamespaceAll).List(ctx, opts)
+			list := providerv1alpha1.AzureConfigList{}
+			err := ctrlClient.List(ctx, &list, &opts)
 			if err != nil {
 				return azureClientSets, microerror.Mask(err)
 			}
@@ -154,7 +156,7 @@ func GetAzureClientSetsByCluster(ctx context.Context, k8sclient kubernetes.Inter
 	}
 
 	for _, cr := range crs {
-		config, err := GetAzureConfigFromSecretName(ctx, k8sclient, key.CredentialName(cr), key.CredentialNamespace(cr), gsTenantID)
+		config, err := GetAzureConfigFromSecretName(ctx, ctrlClient, key.CredentialName(cr), key.CredentialNamespace(cr), gsTenantID)
 		if err != nil {
 			return nil, microerror.Mask(err)
 		}
