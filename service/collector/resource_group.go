@@ -9,7 +9,7 @@ import (
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
-	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-collector/v2/service/credential"
 )
@@ -40,13 +40,13 @@ var (
 )
 
 type ResourceGroupConfig struct {
-	K8sClient  kubernetes.Interface
+	CtrlClient client.Client
 	Logger     micrologger.Logger
 	GSTenantID string
 }
 
 type ResourceGroup struct {
-	k8sClient  kubernetes.Interface
+	ctrlClient client.Client
 	logger     micrologger.Logger
 	gsTenantID string
 }
@@ -54,8 +54,8 @@ type ResourceGroup struct {
 // NewResourceGroup exposes metrics on the existing resource groups for every subscription.
 // It exposes metrcis about the subscriptions found in the "credential-*" secrets of the control plane.
 func NewResourceGroup(config ResourceGroupConfig) (*ResourceGroup, error) {
-	if config.K8sClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.K8sClient must not be empty", config)
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
 	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
@@ -65,7 +65,7 @@ func NewResourceGroup(config ResourceGroupConfig) (*ResourceGroup, error) {
 	}
 
 	r := &ResourceGroup{
-		k8sClient:  config.K8sClient,
+		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,
 		gsTenantID: config.GSTenantID,
 	}
@@ -75,7 +75,7 @@ func NewResourceGroup(config ResourceGroupConfig) (*ResourceGroup, error) {
 
 func (r *ResourceGroup) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
-	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(ctx, r.k8sClient, r.gsTenantID)
+	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(ctx, r.ctrlClient, r.gsTenantID)
 	if err != nil {
 		return microerror.Mask(err)
 	}

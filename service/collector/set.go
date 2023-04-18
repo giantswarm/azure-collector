@@ -99,7 +99,7 @@ func NewSet(config SetConfig) (*Set, error) {
 
 	{
 		c := ResourceGroupConfig{
-			K8sClient:  config.K8sClient.K8sClient(),
+			CtrlClient: config.K8sClient.CtrlClient(),
 			Logger:     config.Logger,
 			GSTenantID: config.GSTenantID,
 		}
@@ -114,8 +114,7 @@ func NewSet(config SetConfig) (*Set, error) {
 
 	{
 		c := UsageConfig{
-			G8sClient:  config.K8sClient.G8sClient(),
-			K8sClient:  config.K8sClient.K8sClient(),
+			CtrlClient: config.K8sClient.CtrlClient(),
 			Logger:     config.Logger,
 			Location:   config.Location,
 			GSTenantID: config.GSTenantID,
@@ -131,8 +130,7 @@ func NewSet(config SetConfig) (*Set, error) {
 
 	{
 		c := RateLimitConfig{
-			G8sClient:  config.K8sClient.G8sClient(),
-			K8sClient:  config.K8sClient.K8sClient(),
+			CtrlClient: config.K8sClient.CtrlClient(),
 			Location:   config.Location,
 			Logger:     config.Logger,
 			GSTenantID: config.GSTenantID,
@@ -149,7 +147,7 @@ func NewSet(config SetConfig) (*Set, error) {
 	{
 		if config.GSTenantID == gsTenantID {
 			c := SPExpirationConfig{
-				K8sClient:  config.K8sClient.K8sClient(),
+				CtrlClient: config.K8sClient.CtrlClient(),
 				Logger:     config.Logger,
 				GSTenantID: config.GSTenantID,
 			}

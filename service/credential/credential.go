@@ -7,8 +7,6 @@ import (
 	providerv1alpha1 "github.com/giantswarm/apiextensions/v2/pkg/apis/provider/v1alpha1"
 	"github.com/giantswarm/microerror"
 	v1 "k8s.io/api/core/v1"
-	apismetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-collector/v2/client"
@@ -21,7 +19,6 @@ const (
 	SubscriptionIDKey = "azure.azureoperator.subscriptionid"
 	TenantIDKey       = "azure.azureoperator.tenantid"
 	PartnerIDKey      = "azure.azureoperator.partnerid"
-	SecretLabel       = "app=credentiald" // nolint:gosec
 	SingleTenantSP    = "giantswarm.io/single-tenant-service-principal"
 )
 
@@ -92,10 +89,10 @@ func GetAzureConfigFromSecret(credential *v1.Secret, gsTenantID string) (*client
 	return &azureClientSetConfig, nil
 }
 
-func GetAzureClientSetsFromCredentialSecrets(ctx context.Context, k8sclient kubernetes.Interface, gsTenantID string) (map[*client.AzureClientSetConfig]*client.AzureClientSet, error) {
+func GetAzureClientSetsFromCredentialSecrets(ctx context.Context, ctrlClient ctrlclient.Client, gsTenantID string) (map[*client.AzureClientSetConfig]*client.AzureClientSet, error) {
 	azureClientSets := map[*client.AzureClientSetConfig]*client.AzureClientSet{}
 
-	secrets, err := GetCredentialSecrets(ctx, k8sclient)
+	secrets, err := GetCredentialSecrets(ctx, ctrlClient)
 	if err != nil {
 		return azureClientSets, microerror.Mask(err)
 	}
@@ -117,10 +114,10 @@ func GetAzureClientSetsFromCredentialSecrets(ctx context.Context, k8sclient kube
 	return azureClientSets, nil
 }
 
-func GetAzureClientSetsFromCredentialSecretsBySubscription(ctx context.Context, k8sclient kubernetes.Interface, gsTenantID string) (map[string]*client.AzureClientSet, error) {
+func GetAzureClientSetsFromCredentialSecretsBySubscription(ctx context.Context, ctrlClient ctrlclient.Client, gsTenantID string) (map[string]*client.AzureClientSet, error) {
 	azureClientSets := map[string]*client.AzureClientSet{}
 
-	rawAzureClientSets, err := GetAzureClientSetsFromCredentialSecrets(ctx, k8sclient, gsTenantID)
+	rawAzureClientSets, err := GetAzureClientSetsFromCredentialSecrets(ctx, ctrlClient, gsTenantID)
 	if err != nil {
 		return azureClientSets, microerror.Mask(err)
 	}
@@ -170,15 +167,15 @@ func GetAzureClientSetsByCluster(ctx context.Context, ctrlClient ctrlclient.Clie
 	return azureClientSets, nil
 }
 
-func GetCredentialSecrets(ctx context.Context, k8sClient kubernetes.Interface) (secrets []v1.Secret, err error) {
+func GetCredentialSecrets(ctx context.Context, ctrlClient ctrlclient.Client) (secrets []v1.Secret, err error) {
 	mark := ""
 	page := 0
 	for page == 0 || len(mark) > 0 {
-		opts := apismetav1.ListOptions{
-			Continue:      mark,
-			LabelSelector: SecretLabel,
+		opts := ctrlclient.ListOptions{
+			Continue: mark,
 		}
-		list, err := k8sClient.CoreV1().Secrets("").List(ctx, opts)
+		list := v1.SecretList{}
+		err := ctrlClient.List(ctx, &list, &opts, ctrlclient.MatchingLabels{"app": "credentiald"})
 		if err != nil {
 			return secrets, microerror.Mask(err)
 		}
