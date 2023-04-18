@@ -129,6 +129,12 @@ require (
 )
 
 replace (
+	github.com/gin-gonic/gin v1.4.0 => github.com/gin-gonic/gin v1.9.0
+	github.com/labstack/echo/v4 v4.1.11 => github.com/labstack/echo/v4 v4.10.2
+	github.com/microcosm-cc/bluemonday v1.0.2 => github.com/microcosm-cc/bluemonday v1.0.23
+	github.com/nats-io/nats-server/v2 v2.5.0 => github.com/nats-io/nats-server/v2 v2.9.15
+	github.com/valyala/fasthttp v1.6.0 => github.com/valyala/fasthttp v1.45.0
+	helm.sh/helm/v3 => helm.sh/helm/v3 v3.11.3
 	k8s.io/api => k8s.io/api v0.25.0
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.25.0
 	k8s.io/apimachinery => k8s.io/apimachinery v0.25.0
