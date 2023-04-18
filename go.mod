@@ -7,16 +7,16 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.28
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.12
 	github.com/Azure/go-autorest/autorest/to v0.4.0
-	github.com/giantswarm/apiextensions/v2 v2.6.2
-	github.com/giantswarm/apiextensions/v3 v3.32.0
+	github.com/giantswarm/apiextensions/v6 v6.5.0
+	github.com/giantswarm/apiextensions/v6 v6.5.0
 	github.com/giantswarm/exporterkit v1.0.0
-	github.com/giantswarm/k8sclient/v4 v4.1.0
+	github.com/giantswarm/k8sclient/v7 v7.0.1
 	github.com/giantswarm/microendpoint v1.0.0
 	github.com/giantswarm/microerror v0.4.0
 	github.com/giantswarm/microkit v1.0.0
-	github.com/giantswarm/micrologger v0.6.0
+	github.com/giantswarm/micrologger v1.0.0
 	github.com/giantswarm/operatorkit/v2 v2.0.2
-	github.com/giantswarm/statusresource/v2 v2.0.0
+	github.com/giantswarm/statusresource/v5 v5.0.0
 	github.com/giantswarm/versionbundle v1.0.0
 	github.com/google/go-cmp v0.5.9
 	github.com/prometheus/client_golang v1.15.0
