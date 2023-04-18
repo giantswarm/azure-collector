@@ -9,8 +9,8 @@ import (
 	v1 "k8s.io/api/core/v1"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/giantswarm/azure-collector/v2/client"
-	"github.com/giantswarm/azure-collector/v2/service/collector/key"
+	"github.com/giantswarm/azure-collector/v3/client"
+	"github.com/giantswarm/azure-collector/v3/service/collector/key"
 )
 
 const (

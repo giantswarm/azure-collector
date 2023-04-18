@@ -20,9 +20,9 @@ import (
 	"sigs.k8s.io/cluster-api/api/v1alpha3"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/giantswarm/azure-collector/v2/client"
-	"github.com/giantswarm/azure-collector/v2/service/collector/key"
-	"github.com/giantswarm/azure-collector/v2/service/credential"
+	"github.com/giantswarm/azure-collector/v3/client"
+	"github.com/giantswarm/azure-collector/v3/service/collector/key"
+	"github.com/giantswarm/azure-collector/v3/service/credential"
 )
 
 const (
