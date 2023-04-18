@@ -7,11 +7,10 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/services/resources/mgmt/2019-05-01/resources" //nolint:staticcheck
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-collector/v2/pkg/project"
 	"github.com/giantswarm/azure-collector/v2/service/credential"
@@ -58,16 +57,14 @@ var (
 )
 
 type RateLimitConfig struct {
-	G8sClient  versioned.Interface
-	K8sClient  kubernetes.Interface
+	CtrlClient client.Client
 	Logger     micrologger.Logger
 	Location   string
 	GSTenantID string
 }
 
 type RateLimit struct {
-	g8sClient  versioned.Interface
-	k8sClient  kubernetes.Interface
+	ctrlClient client.Client
 	logger     micrologger.Logger
 	location   string
 	gsTenantID string
@@ -82,11 +79,8 @@ func init() {
 // It creates and fetches a resource group. That way it can inspect the Azure API response to find rate limit headers.
 // It uses the credentials found in the "credential-*" secrets of the control plane.
 func NewRateLimit(config RateLimitConfig) (*RateLimit, error) {
-	if config.G8sClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.G8sClient must not be empty", config)
-	}
-	if config.K8sClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.K8sClient must not be empty", config)
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
 	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
@@ -99,8 +93,7 @@ func NewRateLimit(config RateLimitConfig) (*RateLimit, error) {
 	}
 
 	u := &RateLimit{
-		g8sClient:  config.G8sClient,
-		k8sClient:  config.K8sClient,
+		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,
 		location:   config.Location,
 		gsTenantID: config.GSTenantID,
@@ -112,7 +105,7 @@ func NewRateLimit(config RateLimitConfig) (*RateLimit, error) {
 func (u *RateLimit) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
-	clientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(ctx, u.k8sClient, u.gsTenantID)
+	clientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(ctx, u.ctrlClient, u.gsTenantID)
 	if err != nil {
 		return microerror.Mask(err)
 	}

@@ -7,7 +7,7 @@ import (
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/client-go/kubernetes"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-collector/v2/client"
 	"github.com/giantswarm/azure-collector/v2/service/credential"
@@ -50,13 +50,13 @@ var (
 )
 
 type SPExpirationConfig struct {
-	K8sClient  kubernetes.Interface
+	CtrlClient ctrlclient.Client
 	Logger     micrologger.Logger
 	GSTenantID string
 }
 
 type SPExpiration struct {
-	k8sClient  kubernetes.Interface
+	ctrlClient ctrlclient.Client
 	logger     micrologger.Logger
 	gsTenantID string
 }
@@ -64,8 +64,8 @@ type SPExpiration struct {
 // NewSPExpiration exposes metrics about the expiration date of Azure Service Principals.
 // It exposes metrcis about the Service Principals found in the "credential-*" secrets of the control plane.
 func NewSPExpiration(config SPExpirationConfig) (*SPExpiration, error) {
-	if config.K8sClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.K8sClient must not be empty", config)
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
 	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
@@ -75,7 +75,7 @@ func NewSPExpiration(config SPExpirationConfig) (*SPExpiration, error) {
 	}
 
 	v := &SPExpiration{
-		k8sClient:  config.K8sClient,
+		ctrlClient: config.CtrlClient,
 		logger:     config.Logger,
 		gsTenantID: config.GSTenantID,
 	}
@@ -86,7 +86,7 @@ func NewSPExpiration(config SPExpirationConfig) (*SPExpiration, error) {
 func (v *SPExpiration) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
 
-	azureClientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(ctx, v.k8sClient, v.gsTenantID)
+	azureClientSets, err := credential.GetAzureClientSetsFromCredentialSecrets(ctx, v.ctrlClient, v.gsTenantID)
 	if err != nil {
 		return microerror.Mask(err)
 	}
