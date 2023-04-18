@@ -3,11 +3,10 @@ package collector
 import (
 	"context"
 
-	"github.com/giantswarm/apiextensions/v2/pkg/clientset/versioned"
 	"github.com/giantswarm/microerror"
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/client-go/kubernetes"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-collector/v2/service/credential"
 )
@@ -38,18 +37,16 @@ var (
 )
 
 type UsageConfig struct {
-	G8sClient versioned.Interface
-	K8sClient kubernetes.Interface
-	Logger    micrologger.Logger
+	CtrlClient client.Client
+	Logger     micrologger.Logger
 
 	Location   string
 	GSTenantID string
 }
 
 type Usage struct {
-	g8sClient versioned.Interface
-	k8sClient kubernetes.Interface
-	logger    micrologger.Logger
+	ctrlClient client.Client
+	logger     micrologger.Logger
 
 	usageScrapeError prometheus.Counter
 
@@ -64,11 +61,8 @@ func init() {
 // NewUsage exposes metrics about the quota usage on Azure so we can alert when we are reaching the quota limits.
 // It exposes quota metrics for every subscription found in the "credential-*" secrets of the control plane.
 func NewUsage(config UsageConfig) (*Usage, error) {
-	if config.G8sClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.G8sClient must not be empty", config)
-	}
-	if config.K8sClient == nil {
-		return nil, microerror.Maskf(invalidConfigError, "%T.K8sClient must not be empty", config)
+	if config.CtrlClient == nil {
+		return nil, microerror.Maskf(invalidConfigError, "%T.CtrlClient must not be empty", config)
 	}
 	if config.Logger == nil {
 		return nil, microerror.Maskf(invalidConfigError, "%T.Logger must not be empty", config)
@@ -82,8 +76,7 @@ func NewUsage(config UsageConfig) (*Usage, error) {
 	}
 
 	u := &Usage{
-		g8sClient:        config.G8sClient,
-		k8sClient:        config.K8sClient,
+		ctrlClient:       config.CtrlClient,
 		logger:           config.Logger,
 		usageScrapeError: scrapeErrorCounter,
 		location:         config.Location,
@@ -95,7 +88,7 @@ func NewUsage(config UsageConfig) (*Usage, error) {
 
 func (u *Usage) Collect(ch chan<- prometheus.Metric) error {
 	ctx := context.Background()
-	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(ctx, u.k8sClient, u.gsTenantID)
+	clientSets, err := credential.GetAzureClientSetsFromCredentialSecretsBySubscription(ctx, u.ctrlClient, u.gsTenantID)
 	if err != nil {
 		return microerror.Mask(err)
 	}
