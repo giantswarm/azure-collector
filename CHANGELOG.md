@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Use non-exp MachinePool to check for cluster worker nodes count. 
+
 ## [3.0.0] - 2023-04-18
 
 ### Changed
