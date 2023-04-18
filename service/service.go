@@ -13,11 +13,13 @@ import (
 	"github.com/giantswarm/statusresource/v5"
 	"github.com/giantswarm/versionbundle"
 	"github.com/spf13/viper"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/rest"
 	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
 	capiexpv1beta1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
+	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-collector/v2/flag"
 	"github.com/giantswarm/azure-collector/v2/pkg/project"
@@ -142,11 +144,19 @@ func New(config Config) (*Service, error) {
 
 	var statusResourceCollector *statusresource.CollectorSet
 	{
-		var appResource = schema.GroupVersionResource{Group: "provider.giantswarm.io", Version: "v1alpha1", Resource: "azureconfigs"}
+		f := func(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
+			cl, err := ctrlclient.NewWithWatch(k8sClient.RESTConfig(), ctrlclient.Options{})
+			if err != nil {
+				return nil, microerror.Mask(err)
+			}
+
+			list := v1alpha1.AzureConfigList{}
+			return cl.Watch(ctx, &list)
+		}
 
 		c := statusresource.CollectorSetConfig{
 			Logger:  config.Logger,
-			Watcher: k8sClient.DynClient().Resource(appResource).Watch,
+			Watcher: f,
 		}
 
 		statusResourceCollector, err = statusresource.NewCollectorSet(c)
