@@ -1,4 +1,4 @@
-module github.com/giantswarm/azure-collector/v2
+module github.com/giantswarm/azure-collector/v3
 
 go 1.18
 

@@ -12,8 +12,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/giantswarm/azure-collector/v2/pkg/project"
-	"github.com/giantswarm/azure-collector/v2/service/credential"
+	"github.com/giantswarm/azure-collector/v3/pkg/project"
+	"github.com/giantswarm/azure-collector/v3/service/credential"
 )
 
 const (

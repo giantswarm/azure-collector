@@ -21,9 +21,9 @@ import (
 	capiexpv1beta1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/giantswarm/azure-collector/v2/flag"
-	"github.com/giantswarm/azure-collector/v2/pkg/project"
-	"github.com/giantswarm/azure-collector/v2/service/collector"
+	"github.com/giantswarm/azure-collector/v3/flag"
+	"github.com/giantswarm/azure-collector/v3/pkg/project"
+	"github.com/giantswarm/azure-collector/v3/service/collector"
 )
 
 // Config represents the configuration used to create a new service.
