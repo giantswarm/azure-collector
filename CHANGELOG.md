@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Use CtrlClient instead of typed clients.
+- Use v1beta1 CAPI and CAPZ types.
 
 ## [2.13.0] - 2023-04-05
 

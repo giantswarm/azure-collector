@@ -15,9 +15,9 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
-	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1alpha3"
+	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	capiexpv1alpha3 "sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	capiexpv1beta1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 
 	"github.com/giantswarm/azure-collector/v2/flag"
 	"github.com/giantswarm/azure-collector/v2/pkg/project"
@@ -110,7 +110,7 @@ func New(config Config) (*Service, error) {
 			SchemeBuilder: k8sclient.SchemeBuilder{
 				v1alpha1.AddToScheme,
 				capiv1beta1.AddToScheme,
-				capiexpv1alpha3.AddToScheme,
+				capiexpv1beta1.AddToScheme,
 				capzv1alpha3.AddToScheme,
 			},
 

@@ -11,7 +11,7 @@ import (
 	"github.com/giantswarm/micrologger"
 	"github.com/prometheus/client_golang/prometheus"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
-	"sigs.k8s.io/cluster-api/exp/api/v1alpha3"
+	expcapiv1beta1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/giantswarm/azure-collector/v2/internal/capzcredentials"
@@ -62,7 +62,7 @@ func (n *NodePools) Collect(ctx context.Context, cluster *capiv1beta1.Cluster, c
 	var nodePoolsCount int
 	var currentWorkersCount int64
 	{
-		nps := v1alpha3.MachinePoolList{}
+		nps := expcapiv1beta1.MachinePoolList{}
 		err := n.ctrlClient.List(ctx, &nps, client.MatchingLabels{label.Cluster: cluster.Name})
 		if err != nil {
 			return microerror.Mask(err)
