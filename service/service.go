@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/rest"
 	capzv1alpha3 "sigs.k8s.io/cluster-api-provider-azure/api/v1beta1"
 	capiv1beta1 "sigs.k8s.io/cluster-api/api/v1beta1"
+	capiv1alpha4 "sigs.k8s.io/cluster-api/exp/api/v1alpha4"
 	capiexpv1beta1 "sigs.k8s.io/cluster-api/exp/api/v1beta1"
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -114,6 +115,7 @@ func New(config Config) (*Service, error) {
 				capiv1beta1.AddToScheme,
 				capiexpv1beta1.AddToScheme,
 				capzv1alpha3.AddToScheme,
+				capiv1alpha4.AddToScheme,
 			},
 
 			KubeConfigPath: kubeConfigPath,
