@@ -83,7 +83,7 @@ rules:
     verbs:
       - get
   - apiGroups:
-      - exp.cluster.x-k8s.io
+      - cluster.x-k8s.io
     resources:
       - machinepools
     verbs:
