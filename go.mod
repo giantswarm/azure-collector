@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible
-	github.com/Azure/go-autorest/autorest v0.11.28
+	github.com/Azure/go-autorest/autorest v0.11.29
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.12
 	github.com/Azure/go-autorest/autorest/to v0.4.0
 	github.com/giantswarm/apiextensions/v6 v6.5.0
@@ -18,9 +18,9 @@ require (
 	github.com/giantswarm/statusresource/v5 v5.0.0
 	github.com/giantswarm/versionbundle v1.0.0
 	github.com/google/go-cmp v0.5.9
-	github.com/prometheus/client_golang v1.15.0
+	github.com/prometheus/client_golang v1.15.1
 	github.com/spf13/viper v1.15.0
-	golang.org/x/sync v0.1.0
+	golang.org/x/sync v0.2.0
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v1.5.2
@@ -134,7 +134,7 @@ replace (
 	github.com/microcosm-cc/bluemonday v1.0.2 => github.com/microcosm-cc/bluemonday v1.0.23
 	github.com/nats-io/nats-server/v2 v2.5.0 => github.com/nats-io/nats-server/v2 v2.9.15
 	github.com/valyala/fasthttp v1.6.0 => github.com/valyala/fasthttp v1.45.0
-	helm.sh/helm/v3 => helm.sh/helm/v3 v3.11.3
+	helm.sh/helm/v3 => helm.sh/helm/v3 v3.12.0
 	k8s.io/api => k8s.io/api v0.25.0
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.25.0
 	k8s.io/apimachinery => k8s.io/apimachinery v0.25.0
