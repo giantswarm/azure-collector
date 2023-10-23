@@ -17,7 +17,7 @@ require (
 	github.com/giantswarm/operatorkit/v2 v2.0.2
 	github.com/giantswarm/statusresource/v5 v5.0.0
 	github.com/giantswarm/versionbundle v1.0.0
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.6.0
 	github.com/prometheus/client_golang v1.15.1
 	github.com/spf13/viper v1.15.0
 	golang.org/x/sync v0.2.0
