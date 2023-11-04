@@ -20,7 +20,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/prometheus/client_golang v1.15.1
 	github.com/spf13/viper v1.15.0
-	golang.org/x/sync v0.2.0
+	golang.org/x/sync v0.5.0
 	k8s.io/api v0.26.1
 	k8s.io/apimachinery v0.26.1
 	k8s.io/client-go v1.5.2
