@@ -134,7 +134,7 @@ replace (
 	github.com/microcosm-cc/bluemonday v1.0.2 => github.com/microcosm-cc/bluemonday v1.0.23
 	github.com/nats-io/nats-server/v2 v2.5.0 => github.com/nats-io/nats-server/v2 v2.9.15
 	github.com/valyala/fasthttp v1.6.0 => github.com/valyala/fasthttp v1.45.0
-	helm.sh/helm/v3 => helm.sh/helm/v3 v3.12.0
+	helm.sh/helm/v3 => helm.sh/helm/v3 v3.13.2
 	k8s.io/api => k8s.io/api v0.25.0
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.25.0
 	k8s.io/apimachinery => k8s.io/apimachinery v0.25.0
