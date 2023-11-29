@@ -1,5 +1,5 @@
 orbs:
-  architect: giantswarm/architect@4.33.0
+  architect: giantswarm/architect@4.35.5
 
 version: 2.1
 workflows:
@@ -15,12 +15,9 @@ workflows:
               only: /^v.*/
 
       # build and push docker image to quay
-      - architect/push-to-docker:
+      - architect/push-to-registries:
           context: architect
-          name: push-azure-collector-to-quay
-          image: "quay.io/giantswarm/azure-collector"
-          username_envar: "QUAY_USERNAME"
-          password_envar: "QUAY_PASSWORD"
+          name: push-to-registries
           requires:
             - go-build
           filters:
@@ -37,7 +34,7 @@ workflows:
           chart: "azure-collector"
           # Make sure docker image is successfully built.
           requires:
-            - push-azure-collector-to-quay
+            - push-to-registries
           filters:
             # Trigger the job also on git tag.
             tags:
